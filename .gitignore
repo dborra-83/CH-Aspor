@@ -1,0 +1,104 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv
+
+# AWS SAM
+.aws-sam/
+samconfig.toml.bak
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# AWS
+aws-exports.js
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+
+# Testing
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Temporary files
+*.tmp
+temp/
+tmp/
+
+# Output files (keep structure but ignore contents)
+aspor-extraction-platform/outputs/*
+!aspor-extraction-platform/outputs/.gitkeep
+
+# Sensitive data
+*.pem
+*.key
+secrets.json
+credentials.json
+
+# Node (if frontend evolves)
+node_modules/
+package-lock.json
+
+# Terraform (if used in future)
+*.tfstate
+*.tfstate.*
+.terraform/
+
+# Documentation builds
+docs/_build/
+site/
+
+# Cache
+.cache/
+*.pyc
+
+# MacOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Linux
+.directory
+.Trash-*

@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPOR - Plataforma de Extracción de Información</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-upload-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-upload-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .file-list {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f7f7f7;
+            border-radius: 5px;
+            min-height: 60px;
+        }
+        
+        .file-item {
+            padding: 5px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .file-item button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 3px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        select, .radio-group {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .radio-group {
+            display: flex;
+            gap: 20px;
+            padding: 0;
+            border: none;
+        }
+        
+        .radio-group label {
+            display: flex;
+            align-items: center;
+            margin: 0;
+        }
+        
+        .radio-group input[type="radio"] {
+            margin-right: 8px;
+        }
+        
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .status-message {
+            padding: 10px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .history-table th {
+            background: #f7f7f7;
+            font-weight: 600;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-running {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ASPOR - Plataforma de Extracción</h1>
+            <p>Sistema de análisis de documentos con AWS Bedrock Claude 4.0</p>
+        </div>
+        
+        <div class="main-content">
+            <!-- Nueva Extracción -->
+            <div class="card">
+                <h2>Nueva Extracción</h2>
+                
+                <form id="extractionForm">
+                    <div class="form-group">
+                        <label>Archivos (máximo 3 - PDF/DOCX)</label>
+                        <label for="fileInput" class="file-upload-btn">
+                            Seleccionar Archivos
+                        </label>
+                        <input type="file" id="fileInput" multiple accept=".pdf,.docx" />
+                        <div id="fileList" class="file-list">
+                            <span style="color: #999;">No hay archivos seleccionados</span>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modelSelect">Modelo de Extracción</label>
+                        <select id="modelSelect">
+                            <option value="">Seleccione un modelo</option>
+                            <option value="A">Modelo A - Contragarantías / ASPOR</option>
+                            <option value="B">Modelo B - Informes Sociales</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Formato de Salida</label>
+                        <div class="radio-group">
+                            <label>
+                                <input type="radio" name="outputFormat" value="docx" checked>
+                                DOCX
+                            </label>
+                            <label>
+                                <input type="radio" name="outputFormat" value="pdf">
+                                PDF
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="processBtn">
+                        Procesar Documentos
+                    </button>
+                    
+                    <div id="statusMessage"></div>
+                </form>
+            </div>
+            
+            <!-- Historial -->
+            <div class="card">
+                <h2>Historial de Ejecuciones</h2>
+                
+                <button class="btn btn-secondary" onclick="loadHistory()">
+                    Actualizar Historial
+                </button>
+                
+                <div id="historyContainer">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Fecha</th>
+                                <th>Modelo</th>
+                                <th>Estado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTableBody">
+                            <tr>
+                                <td colspan="4" style="text-align: center; color: #999;">
+                                    Cargue el historial para ver las ejecuciones
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API Configuration
+        const API_BASE_URL = 'https://your-api-gateway-url.execute-api.region.amazonaws.com/prod';
+        let selectedFiles = [];
+        
+        // File input handling
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            
+            if (files.length > 3) {
+                showStatus('error', 'Máximo 3 archivos permitidos');
+                e.target.value = '';
+                return;
+            }
+            
+            selectedFiles = files;
+            displayFiles();
+        });
+        
+        function displayFiles() {
+            const fileList = document.getElementById('fileList');
+            
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<span style="color: #999;">No hay archivos seleccionados</span>';
+                return;
+            }
+            
+            fileList.innerHTML = '';
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <span>${file.name} (${formatFileSize(file.size)})</span>
+                    <button onclick="removeFile(${index})">Eliminar</button>
+                `;
+                fileList.appendChild(fileItem);
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displayFiles();
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+        
+        // Form submission
+        document.getElementById('extractionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (selectedFiles.length === 0) {
+                showStatus('error', 'Por favor seleccione al menos un archivo');
+                return;
+            }
+            
+            const model = document.getElementById('modelSelect').value;
+            if (!model) {
+                showStatus('error', 'Por favor seleccione un modelo');
+                return;
+            }
+            
+            const outputFormat = document.querySelector('input[name="outputFormat"]:checked').value;
+            
+            await processDocuments(selectedFiles, model, outputFormat);
+        });
+        
+        async function processDocuments(files, model, outputFormat) {
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.textContent = 'Procesando...';
+            
+            showStatus('info', 'Obteniendo URLs para carga de archivos...');
+            
+            try {
+                // Step 1: Get presigned URLs
+                const presignResponse = await fetch(`${API_BASE_URL}/runs/presign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        file_count: files.length
+                    })
+                });
+                
+                if (!presignResponse.ok) {
+                    throw new Error('Error al obtener URLs de carga');
+                }
+                
+                const presignData = await presignResponse.json();
+                
+                // Step 2: Upload files
+                showStatus('info', 'Subiendo archivos...');
+                const uploadedKeys = [];
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const presignedUrl = presignData.presigned_urls[i];
+                    
+                    const formData = new FormData();
+                    Object.entries(presignedUrl.fields).forEach(([key, value]) => {
+                        formData.append(key, value);
+                    });
+                    formData.append('file', file);
+                    
+                    const uploadResponse = await fetch(presignedUrl.url, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Error al subir ${file.name}`);
+                    }
+                    
+                    uploadedKeys.push(presignedUrl.s3_key);
+                }
+                
+                // Step 3: Process documents
+                showStatus('info', 'Procesando documentos con IA...');
+                
+                const processResponse = await fetch(`${API_BASE_URL}/runs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        files: uploadedKeys,
+                        outputFormat: outputFormat
+                    })
+                });
+                
+                if (!processResponse.ok) {
+                    throw new Error('Error al procesar documentos');
+                }
+                
+                const processData = await processResponse.json();
+                
+                // Step 4: Show download link
+                if (processData.status === 'COMPLETED' && processData.downloadUrl) {
+                    showStatus('success', `
+                        Procesamiento completado exitosamente!<br>
+                        <a href="${processData.downloadUrl}" target="_blank" style="color: #667eea;">
+                            Descargar Reporte ${outputFormat.toUpperCase()}
+                        </a>
+                    `);
+                } else {
+                    showStatus('info', `Procesamiento iniciado. ID: ${processData.runId}`);
+                }
+                
+                // Clear form
+                selectedFiles = [];
+                displayFiles();
+                document.getElementById('fileInput').value = '';
+                document.getElementById('modelSelect').value = '';
+                
+                // Refresh history
+                loadHistory();
+                
+            } catch (error) {
+                showStatus('error', error.message);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = 'Procesar Documentos';
+            }
+        }
+        
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.innerHTML = message;
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.innerHTML = '';
+                    statusDiv.className = '';
+                }, 5000);
+            }
+        }
+        
+        async function loadHistory() {
+            const tbody = document.getElementById('historyTableBody');
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loader"></div></td></tr>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/runs?limit=10`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar historial');
+                }
+                
+                const data = await response.json();
+                
+                if (data.runs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No hay ejecuciones previas</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                data.runs.forEach(run => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(run.startedAt).toLocaleString('es-CL')}</td>
+                        <td>${run.model === 'A' ? 'Contragarantías' : 'Informes'}</td>
+                        <td><span class="status-badge status-${run.status.toLowerCase()}">${run.status}</span></td>
+                        <td>
+                            ${run.status === 'COMPLETED' ? 
+                                `<a href="#" onclick="downloadReport('${run.runId}'); return false;">Descargar</a>` : 
+                                '-'
+                            }
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">Error: ${error.message}</td></tr>`;
+            }
+        }
+        
+        async function downloadReport(runId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/runs/${runId}`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al obtener información del reporte');
+                }
+                
+                const data = await response.json();
+                
+                if (data.output) {
+                    const url = data.output.docx_url || data.output.pdf_url;
+                    if (url) {
+                        window.open(url, '_blank');
+                    }
+                }
+            } catch (error) {
+                alert(`Error al descargar: ${error.message}`);
+            }
+        }
+        
+        // Load history on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Uncomment when API is ready
+            // loadHistory();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,329 @@
+{
+  "info": {
+    "name": "ASPOR Extraction Platform API",
+    "description": "Collection for testing ASPOR document extraction API endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "apikey",
+    "apikey": [
+      {
+        "key": "value",
+        "value": "{{api_key}}",
+        "type": "string"
+      },
+      {
+        "key": "key",
+        "value": "x-api-key",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://your-api-gateway-url.execute-api.us-east-1.amazonaws.com/prod",
+      "type": "string"
+    },
+    {
+      "key": "api_key",
+      "value": "demo-api-key-12345",
+      "type": "string"
+    },
+    {
+      "key": "run_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "default-user",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Get Presigned URLs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has presigned URLs\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('presigned_urls');",
+              "    pm.expect(jsonData.presigned_urls).to.be.an('array');",
+              "});",
+              "",
+              "// Save session_id for next request",
+              "var jsonData = pm.response.json();",
+              "pm.environment.set(\"session_id\", jsonData.session_id);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"file_count\": 2\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/runs/presign",
+          "host": ["{{base_url}}"],
+          "path": ["runs", "presign"]
+        }
+      }
+    },
+    {
+      "name": "2. Create Run - Model A",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has runId\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('runId');",
+              "    pm.environment.set(\"run_id\", jsonData.runId);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"model\": \"A\",\n    \"files\": [\n        \"uploads/20240101120000-abc123/file-1\",\n        \"uploads/20240101120000-abc123/file-2\"\n    ],\n    \"outputFormat\": \"docx\",\n    \"userId\": \"{{user_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/runs",
+          "host": ["{{base_url}}"],
+          "path": ["runs"]
+        }
+      }
+    },
+    {
+      "name": "3. Create Run - Model B",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has runId\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('runId');",
+              "    pm.environment.set(\"run_id\", jsonData.runId);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"model\": \"B\",\n    \"files\": [\n        \"uploads/20240101120000-abc123/file-1\"\n    ],\n    \"outputFormat\": \"pdf\",\n    \"userId\": \"{{user_id}}\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/runs",
+          "host": ["{{base_url}}"],
+          "path": ["runs"]
+        }
+      }
+    },
+    {
+      "name": "4. Get Run Status",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has status\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('status');",
+              "    pm.expect(['PENDING', 'RUNNING', 'COMPLETED', 'FAILED']).to.include(jsonData.status);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/runs/{{run_id}}?userId={{user_id}}",
+          "host": ["{{base_url}}"],
+          "path": ["runs", "{{run_id}}"],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{user_id}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "5. List Runs",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has runs array\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('runs');",
+              "    pm.expect(jsonData.runs).to.be.an('array');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/runs?userId={{user_id}}&limit=10",
+          "host": ["{{base_url}}"],
+          "path": ["runs"],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{user_id}}"
+            },
+            {
+              "key": "limit",
+              "value": "10"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "6. Delete Run (Soft)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response confirms deletion\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/runs/{{run_id}}?userId={{user_id}}&hardDelete=false",
+          "host": ["{{base_url}}"],
+          "path": ["runs", "{{run_id}}"],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{user_id}}"
+            },
+            {
+              "key": "hardDelete",
+              "value": "false"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "name": "7. Delete Run (Hard)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response confirms permanent deletion\", function () {",
+              "    var jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData.message).to.include('permanently');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/runs/{{run_id}}?userId={{user_id}}&hardDelete=true",
+          "host": ["{{base_url}}"],
+          "path": ["runs", "{{run_id}}"],
+          "query": [
+            {
+              "key": "userId",
+              "value": "{{user_id}}"
+            },
+            {
+              "key": "hardDelete",
+              "value": "true"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
