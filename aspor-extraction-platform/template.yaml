@@ -4,8 +4,9 @@ Description: ASPOR Document Extraction Platform with Bedrock Claude 4.0
 
 Globals:
   Function:
-    Timeout: 300
+    Timeout: 60  # Default timeout for most functions
     Runtime: python3.12
+    MemorySize: 512  # Default memory for most functions
     Environment:
       Variables:
         BEDROCK_MODEL_ID: !Ref BedrockModelId
