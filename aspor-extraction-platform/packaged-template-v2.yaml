@@ -1,0 +1,297 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: ASPOR Document Extraction Platform with Bedrock Claude 4.0
+Globals:
+  Function:
+    Timeout: 60
+    Runtime: python3.12
+    MemorySize: 512
+    Environment:
+      Variables:
+        BEDROCK_MODEL_ID:
+          Ref: BedrockModelId
+        DOCUMENTS_BUCKET:
+          Ref: DocumentsBucket
+        DYNAMODB_TABLE:
+          Ref: ExtractionsTable
+        AGENT_A_PROMPT_PARAM:
+          Ref: AgentAPromptParameter
+        AGENT_B_PROMPT_PARAM:
+          Ref: AgentBPromptParameter
+        MAX_FILES: 3
+        MAX_FILE_SIZE_MB: 25
+Parameters:
+  BedrockModelId:
+    Type: String
+    Default: anthropic.claude-3-opus-20240229
+    Description: Bedrock model ID for Claude
+  ApiKeyValue:
+    Type: String
+    NoEcho: true
+    Default: demo-api-key-12345
+    Description: API Key for demo authentication
+Resources:
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: aspor-documents-${AWS::AccountId}
+      VersioningConfiguration:
+        Status: Enabled
+      LifecycleConfiguration:
+        Rules:
+        - Id: DeleteOldFiles
+          Status: Enabled
+          ExpirationInDays: 90
+      CorsConfiguration:
+        CorsRules:
+        - AllowedHeaders:
+          - '*'
+          AllowedMethods:
+          - GET
+          - PUT
+          - POST
+          - DELETE
+          AllowedOrigins:
+          - '*'
+          MaxAge: 3600
+  ExtractionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: aspor-extractions
+      AttributeDefinitions:
+      - AttributeName: pk
+        AttributeType: S
+      - AttributeName: sk
+        AttributeType: S
+      - AttributeName: gsi1pk
+        AttributeType: S
+      - AttributeName: gsi1sk
+        AttributeType: S
+      KeySchema:
+      - AttributeName: pk
+        KeyType: HASH
+      - AttributeName: sk
+        KeyType: RANGE
+      GlobalSecondaryIndexes:
+      - IndexName: GSI1
+        KeySchema:
+        - AttributeName: gsi1pk
+          KeyType: HASH
+        - AttributeName: gsi1sk
+          KeyType: RANGE
+        Projection:
+          ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+  AgentAPromptParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /aspor/prompts/agent-a-contragarantias
+      Type: String
+      Value:
+        Fn::Sub: "${AWS::StackName}-PLACEHOLDER-CONTRAGARANTIAS\nThis will be replaced\
+          \ with actual prompt during deployment\n"
+  AgentBPromptParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /aspor/prompts/agent-b-informes
+      Type: String
+      Value:
+        Fn::Sub: "${AWS::StackName}-PLACEHOLDER-INFORMES\nThis will be replaced with\
+          \ actual prompt during deployment\n"
+  AsporApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: prod
+      CorsConfiguration:
+        AllowMethods:
+        - '*'
+        AllowHeaders:
+        - '*'
+        AllowOrigins:
+        - '*'
+  PresignFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-presign
+      Handler: src/handlers/presign.handler
+      Policies:
+      - S3CrudPolicy:
+          BucketName:
+            Ref: DocumentsBucket
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: AsporApi
+            Path: /runs/presign
+            Method: POST
+      CodeUri: s3://aspor-temp-520754296204/05780e5dafc5215e68916b4061584e1d
+  CreateRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-create-run
+      Handler: src/handlers/create_run.handler
+      Timeout: 900
+      MemorySize: 3008
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ExtractionsTable
+      - S3CrudPolicy:
+          BucketName:
+            Ref: DocumentsBucket
+      - Statement:
+        - Effect: Allow
+          Action:
+          - bedrock:InvokeModel
+          - bedrock:InvokeModelWithResponseStream
+          Resource: '*'
+      - Statement:
+        - Effect: Allow
+          Action:
+          - ssm:GetParameter
+          Resource:
+            Fn::Sub: arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/aspor/prompts/*
+      - Statement:
+        - Effect: Allow
+          Action:
+          - textract:DetectDocumentText
+          - textract:AnalyzeDocument
+          Resource: '*'
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: AsporApi
+            Path: /runs
+            Method: POST
+      CodeUri: s3://aspor-temp-520754296204/05780e5dafc5215e68916b4061584e1d
+  GetRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-get-run
+      Handler: src/handlers/get_run.handler
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ExtractionsTable
+      - S3ReadPolicy:
+          BucketName:
+            Ref: DocumentsBucket
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: AsporApi
+            Path: /runs/{runId}
+            Method: GET
+      CodeUri: s3://aspor-temp-520754296204/05780e5dafc5215e68916b4061584e1d
+  ListRunsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-list-runs
+      Handler: src/handlers/list_runs.handler
+      Policies:
+      - DynamoDBReadPolicy:
+          TableName:
+            Ref: ExtractionsTable
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: AsporApi
+            Path: /runs
+            Method: GET
+      CodeUri: s3://aspor-temp-520754296204/05780e5dafc5215e68916b4061584e1d
+  DeleteRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-delete-run
+      Handler: src/handlers/delete_run.handler
+      Policies:
+      - DynamoDBCrudPolicy:
+          TableName:
+            Ref: ExtractionsTable
+      - S3CrudPolicy:
+          BucketName:
+            Ref: DocumentsBucket
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId:
+              Ref: AsporApi
+            Path: /runs/{runId}
+            Method: DELETE
+      CodeUri: s3://aspor-temp-520754296204/05780e5dafc5215e68916b4061584e1d
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::Sub: aspor-website-${AWS::AccountId}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      WebsiteConfiguration:
+        IndexDocument: index.html
+        ErrorDocument: error.html
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket:
+        Ref: WebsiteBucket
+      PolicyDocument:
+        Statement:
+        - Sid: PublicReadGetObject
+          Effect: Allow
+          Principal: '*'
+          Action: s3:GetObject
+          Resource:
+            Fn::Sub: ${WebsiteBucket.Arn}/*
+  WebsiteDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - Id: S3Origin
+          DomainName:
+            Fn::Sub: ${WebsiteBucket}.s3-website-${AWS::Region}.amazonaws.com
+          CustomOriginConfig:
+            OriginProtocolPolicy: http-only
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods:
+          - GET
+          - HEAD
+          CachedMethods:
+          - GET
+          - HEAD
+          ForwardedValues:
+            QueryString: false
+        Enabled: true
+        DefaultRootObject: index.html
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL
+    Value:
+      Fn::Sub: https://${AsporApi}.execute-api.${AWS::Region}.amazonaws.com/prod
+  WebsiteURL:
+    Description: CloudFront distribution URL
+    Value:
+      Fn::Sub: https://${WebsiteDistribution.DomainName}
+  DocumentsBucketName:
+    Description: S3 bucket for documents
+    Value:
+      Ref: DocumentsBucket
+  DynamoDBTableName:
+    Description: DynamoDB table name
+    Value:
+      Ref: ExtractionsTable

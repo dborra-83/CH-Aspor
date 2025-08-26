@@ -5,9 +5,19 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git remote add:*)",
-      "Bash(git branch:*)"
+      "Bash(git branch:*)",
+      "Bash(pip install:*)",
+      "Bash(aws cloudformation describe-stacks:*)",
+      "Bash(zip:*)",
+      "Bash(aws lambda update-function-configuration:*)",
+      "Bash(/dev/null)",
+      "Bash(aws lambda add-permission:*)",
+      "Bash(aws lambda update-function-code:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\c\\FILESERVER\\CLOUDHESIVE\\TEST3\\CH-Aspor"
+    ]
   }
 }

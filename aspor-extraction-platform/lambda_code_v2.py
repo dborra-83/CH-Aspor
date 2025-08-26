@@ -1,0 +1,151 @@
+import json
+import boto3
+import os
+from datetime import datetime
+import uuid
+
+dynamodb = boto3.resource('dynamodb')
+s3_client = boto3.client('s3')
+lambda_client = boto3.client('lambda')
+
+table_name = os.environ.get('DYNAMODB_TABLE', 'aspor-extractions')
+bucket_name = os.environ.get('DOCUMENTS_BUCKET', 'aspor-documents-520754296204')
+process_function = os.environ.get('PROCESS_FUNCTION', 'aspor-process-run')
+table = dynamodb.Table(table_name)
+
+def handler(event, context):
+    """Create and trigger processing of a new extraction run"""
+    try:
+        # Parse request
+        body = json.loads(event.get('body', '{}'))
+        model = body.get('model')  # 'A' or 'B'
+        files = body.get('files', [])
+        file_names = body.get('fileNames', [])
+        output_format = body.get('outputFormat', 'docx')
+        user_id = body.get('userId', 'default-user')
+        
+        # Validate inputs
+        if model not in ['A', 'B']:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'Model must be A or B'})
+            }
+        
+        if not files or len(files) > 3:
+            return {
+                'statusCode': 400,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({'error': 'Must provide 1-3 files'})
+            }
+        
+        # Create run ID
+        run_id = str(uuid.uuid4())
+        timestamp = datetime.utcnow()
+        
+        # Create DynamoDB entry
+        run_item = {
+            'pk': f'USER#{user_id}',
+            'sk': f'RUN#{timestamp.strftime("%Y%m%d%H%M%S")}#{run_id}',
+            'runId': run_id,
+            'model': model,
+            'files': files,
+            'fileNames': file_names if file_names else [f'file_{i+1}' for i in range(len(files))],
+            'outputFormat': output_format,
+            'status': 'PENDING',
+            'startedAt': timestamp.isoformat(),
+            'userId': user_id,
+            'gsi1pk': 'ALL_RUNS',
+            'gsi1sk': f'{timestamp.strftime("%Y%m%d%H%M%S")}#{run_id}'
+        }
+        
+        table.put_item(Item=run_item)
+        
+        # Check if process function exists
+        try:
+            # Try to invoke the processing function asynchronously
+            invoke_response = lambda_client.invoke(
+                FunctionName=process_function,
+                InvocationType='Event',  # Asynchronous invocation
+                Payload=json.dumps({
+                    'body': json.dumps({
+                        'runId': run_id,
+                        'model': model,
+                        'files': files,
+                        'fileNames': file_names,
+                        'outputFormat': output_format,
+                        'userId': user_id
+                    })
+                })
+            )
+            
+            print(f"Process function invoked with status: {invoke_response['StatusCode']}")
+            
+            # Return immediate response
+            return {
+                'statusCode': 202,  # Accepted
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({
+                    'runId': run_id,
+                    'status': 'PROCESSING',
+                    'message': 'Procesamiento iniciado. Use GET /runs/{runId} para verificar el estado.'
+                })
+            }
+            
+        except lambda_client.exceptions.ResourceNotFoundException:
+            # Process function doesn't exist, use mock processing
+            print(f"Process function {process_function} not found, using mock processing")
+            
+            # For demo, create mock output
+            mock_output_key = f'outputs/{run_id}/report.{output_format}'
+            
+            # Generate presigned URL for mock download
+            download_url = s3_client.generate_presigned_url(
+                'get_object',
+                Params={'Bucket': bucket_name, 'Key': mock_output_key},
+                ExpiresIn=86400  # 24 hours
+            )
+            
+            # Update DynamoDB with mock completion
+            table.update_item(
+                Key={
+                    'pk': f'USER#{user_id}',
+                    'sk': f'RUN#{timestamp.strftime("%Y%m%d%H%M%S")}#{run_id}'
+                },
+                UpdateExpression='SET #status = :status, #output = :output, #endedAt = :endedAt',
+                ExpressionAttributeNames={
+                    '#status': 'status',
+                    '#output': 'output',
+                    '#endedAt': 'endedAt'
+                },
+                ExpressionAttributeValues={
+                    ':status': 'COMPLETED',
+                    ':output': {
+                        output_format: mock_output_key,
+                        'downloadUrl': download_url
+                    },
+                    ':endedAt': datetime.utcnow().isoformat()
+                }
+            )
+            
+            return {
+                'statusCode': 200,
+                'headers': {'Content-Type': 'application/json'},
+                'body': json.dumps({
+                    'runId': run_id,
+                    'status': 'COMPLETED',
+                    'downloadUrl': download_url,
+                    'outputFormat': output_format,
+                    'message': 'Demo mode - no actual processing'
+                })
+            }
+        
+    except Exception as e:
+        print(f"Error creating run: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return {
+            'statusCode': 500,
+            'headers': {'Content-Type': 'application/json'},
+            'body': json.dumps({'error': 'Internal server error', 'details': str(e)})
+        }

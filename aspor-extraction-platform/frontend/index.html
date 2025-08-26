@@ -327,6 +327,7 @@
                         <thead>
                             <tr>
                                 <th>Fecha</th>
+                                <th>Archivos</th>
                                 <th>Modelo</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
@@ -334,7 +335,7 @@
                         </thead>
                         <tbody id="historyTableBody">
                             <tr>
-                                <td colspan="4" style="text-align: center; color: #999;">
+                                <td colspan="5" style="text-align: center; color: #999;">
                                     Cargue el historial para ver las ejecuciones
                                 </td>
                             </tr>
@@ -347,7 +348,7 @@
     
     <script>
         // API Configuration
-        const API_BASE_URL = 'https://your-api-gateway-url.execute-api.region.amazonaws.com/prod';
+        const API_BASE_URL = 'https://bsdxo3p5tc.execute-api.us-east-1.amazonaws.com/prod';
         let selectedFiles = [];
         
         // File input handling
@@ -479,6 +480,7 @@
                     body: JSON.stringify({
                         model: model,
                         files: uploadedKeys,
+                        fileNames: files.map(f => f.name),
                         outputFormat: outputFormat
                     })
                 });
@@ -533,10 +535,10 @@
         
         async function loadHistory() {
             const tbody = document.getElementById('historyTableBody');
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;"><div class="loader"></div></td></tr>';
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;"><div class="loader"></div></td></tr>';
             
             try {
-                const response = await fetch(`${API_BASE_URL}/runs?limit=10`);
+                const response = await fetch(`${API_BASE_URL}/runs?limit=50`);
                 
                 if (!response.ok) {
                     throw new Error('Error al cargar historial');
@@ -545,16 +547,30 @@
                 const data = await response.json();
                 
                 if (data.runs.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No hay ejecuciones previas</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No hay ejecuciones previas</td></tr>';
                     return;
                 }
                 
                 tbody.innerHTML = '';
                 data.runs.forEach(run => {
                     const row = document.createElement('tr');
+                    let displayName = 'Sin archivos';
+                    
+                    if (run.fileNames && run.fileNames.length > 0) {
+                        displayName = run.fileNames.slice(0, 2).join(', ');
+                        if (run.fileNames.length > 2) {
+                            displayName += ` (+${run.fileNames.length - 2})`;
+                        }
+                    } else if (run.displayName) {
+                        displayName = run.displayName;
+                    }
+                    
+                    const modelName = run.modelName || (run.model === 'A' ? 'Contragarantías/ASPOR' : 'Informes Sociales');
+                    
                     row.innerHTML = `
                         <td>${new Date(run.startedAt).toLocaleString('es-CL')}</td>
-                        <td>${run.model === 'A' ? 'Contragarantías' : 'Informes'}</td>
+                        <td title="${run.fileNames ? run.fileNames.join(', ') : ''}" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${displayName}</td>
+                        <td>${modelName}</td>
                         <td><span class="status-badge status-${run.status.toLowerCase()}">${run.status}</span></td>
                         <td>
                             ${run.status === 'COMPLETED' ? 
@@ -567,7 +583,7 @@
                 });
                 
             } catch (error) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: red;">Error: ${error.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${error.message}</td></tr>`;
             }
         }
         

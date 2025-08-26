@@ -250,7 +250,7 @@ Resources:
       DistributionConfig:
         Origins:
           - Id: S3Origin
-            DomainName: !Sub '${WebsiteBucket}.s3-website-${AWS::Region}.amazonaws.com'
+            DomainName: !GetAtt WebsiteBucket.WebsiteURL
             CustomOriginConfig:
               OriginProtocolPolicy: http-only
         DefaultCacheBehavior:

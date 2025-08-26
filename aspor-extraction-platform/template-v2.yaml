@@ -1,54 +1,16 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: ASPOR Document Extraction Platform with Bedrock Claude 4.0
+Description: ASPOR Document Extraction Platform with Bedrock Claude
 
 Globals:
   Function:
-    Timeout: 60  # Default timeout for most functions
     Runtime: python3.12
-    MemorySize: 512  # Default memory for most functions
     Environment:
       Variables:
-        BEDROCK_MODEL_ID: !Ref BedrockModelId
-        DOCUMENTS_BUCKET: !Ref DocumentsBucket
         DYNAMODB_TABLE: !Ref ExtractionsTable
-        AGENT_A_PROMPT_PARAM: !Ref AgentAPromptParameter
-        AGENT_B_PROMPT_PARAM: !Ref AgentBPromptParameter
-        MAX_FILES: 3
-        MAX_FILE_SIZE_MB: 25
-
-Parameters:
-  BedrockModelId:
-    Type: String
-    Default: anthropic.claude-3-opus-20240229
-    Description: Bedrock model ID for Claude
-  
-  ApiKeyValue:
-    Type: String
-    NoEcho: true
-    Default: "demo-api-key-12345"
-    Description: API Key for demo authentication
+        DOCUMENTS_BUCKET: !Ref DocumentsBucket
 
 Resources:
-  # S3 Bucket for documents
-  DocumentsBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub aspor-documents-${AWS::AccountId}
-      VersioningConfiguration:
-        Status: Enabled
-      LifecycleConfiguration:
-        Rules:
-          - Id: DeleteOldFiles
-            Status: Enabled
-            ExpirationInDays: 90
-      CorsConfiguration:
-        CorsRules:
-          - AllowedHeaders: ['*']
-            AllowedMethods: [GET, PUT, POST, DELETE]
-            AllowedOrigins: ['*']
-            MaxAge: 3600
-
   # DynamoDB Table
   ExtractionsTable:
     Type: AWS::DynamoDB::Table
@@ -79,24 +41,45 @@ Resources:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
 
-  # SSM Parameters for prompts
-  AgentAPromptParameter:
-    Type: AWS::SSM::Parameter
+  # S3 Buckets
+  DocumentsBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      Name: /aspor/prompts/agent-a-contragarantias
-      Type: String
-      Value: !Sub |
-        ${AWS::StackName}-PLACEHOLDER-CONTRAGARANTIAS
-        This will be replaced with actual prompt during deployment
+      BucketName: !Sub 'aspor-documents-${AWS::AccountId}'
+      CorsConfiguration:
+        CorsRules:
+          - AllowedOrigins:
+              - '*'
+            AllowedMethods:
+              - GET
+              - PUT
+              - POST
+            AllowedHeaders:
+              - '*'
 
-  AgentBPromptParameter:
-    Type: AWS::SSM::Parameter
+  WebsiteBucket:
+    Type: AWS::S3::Bucket
     Properties:
-      Name: /aspor/prompts/agent-b-informes
-      Type: String
-      Value: !Sub |
-        ${AWS::StackName}-PLACEHOLDER-INFORMES
-        This will be replaced with actual prompt during deployment
+      BucketName: !Sub 'aspor-website-${AWS::AccountId}'
+      WebsiteConfiguration:
+        IndexDocument: index.html
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+
+  WebsiteBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref WebsiteBucket
+      PolicyDocument:
+        Statement:
+          - Sid: PublicReadGetObject
+            Effect: Allow
+            Principal: '*'
+            Action: 's3:GetObject'
+            Resource: !Sub '${WebsiteBucket.Arn}/*'
 
   # API Gateway
   AsporApi:
@@ -116,7 +99,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: aspor-presign
-      Handler: src/handlers/presign.handler
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_presign.py
       Policies:
         - S3CrudPolicy:
             BucketName: !Ref DocumentsBucket
@@ -132,31 +116,19 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: aspor-create-run
-      Handler: src/handlers/create_run.handler
-      Timeout: 900
-      MemorySize: 3008
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_code_v2.py
+      Environment:
+        Variables:
+          PROCESS_FUNCTION: !Ref ProcessRunFunction
+      Timeout: 30
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ExtractionsTable
         - S3CrudPolicy:
             BucketName: !Ref DocumentsBucket
-        - Statement:
-            - Effect: Allow
-              Action:
-                - bedrock:InvokeModel
-                - bedrock:InvokeModelWithResponseStream
-              Resource: "*"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - ssm:GetParameter
-              Resource: !Sub "arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/aspor/prompts/*"
-        - Statement:
-            - Effect: Allow
-              Action:
-                - textract:DetectDocumentText
-                - textract:AnalyzeDocument
-              Resource: "*"
+        - LambdaInvokeFunction:
+            FunctionName: !Ref ProcessRunFunction
       Events:
         ApiEvent:
           Type: HttpApi
@@ -165,11 +137,33 @@ Resources:
             Path: /runs
             Method: POST
 
+  ProcessRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-process-run
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_process_run.py
+      Timeout: 900  # 15 minutes
+      MemorySize: 3008
+      ReservedConcurrentExecutions: 5
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ExtractionsTable
+        - S3CrudPolicy:
+            BucketName: !Ref DocumentsBucket
+        - Statement:
+          - Effect: Allow
+            Action:
+              - textract:*
+              - bedrock:InvokeModel
+            Resource: '*'
+
   GetRunFunction:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: aspor-get-run
-      Handler: src/handlers/get_run.handler
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_get_run.py
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref ExtractionsTable
@@ -187,7 +181,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: aspor-list-runs
-      Handler: src/handlers/list_runs.handler
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_list_runs.py
       Policies:
         - DynamoDBReadPolicy:
             TableName: !Ref ExtractionsTable
@@ -203,7 +198,8 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: aspor-delete-run
-      Handler: src/handlers/delete_run.handler
+      Handler: lambda_code.handler
+      CodeUri: ./lambda_delete_run.py
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref ExtractionsTable
@@ -217,34 +213,8 @@ Resources:
             Path: /runs/{runId}
             Method: DELETE
 
-  # Static Website
-  WebsiteBucket:
-    Type: AWS::S3::Bucket
-    Properties:
-      BucketName: !Sub aspor-website-${AWS::AccountId}
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: false
-        BlockPublicPolicy: false
-        IgnorePublicAcls: false
-        RestrictPublicBuckets: false
-      WebsiteConfiguration:
-        IndexDocument: index.html
-        ErrorDocument: error.html
-
-  WebsiteBucketPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref WebsiteBucket
-      PolicyDocument:
-        Statement:
-          - Sid: PublicReadGetObject
-            Effect: Allow
-            Principal: "*"
-            Action: "s3:GetObject"
-            Resource: !Sub "${WebsiteBucket.Arn}/*"
-
   # CloudFront Distribution
-  WebsiteDistribution:
+  CloudFrontDistribution:
     Type: AWS::CloudFront::Distribution
     Properties:
       DistributionConfig:
@@ -253,28 +223,22 @@ Resources:
             DomainName: !Sub '${WebsiteBucket}.s3-website-${AWS::Region}.amazonaws.com'
             CustomOriginConfig:
               OriginProtocolPolicy: http-only
+        Enabled: true
+        DefaultRootObject: index.html
         DefaultCacheBehavior:
           TargetOriginId: S3Origin
           ViewerProtocolPolicy: redirect-to-https
-          AllowedMethods:
-            - GET
-            - HEAD
-          CachedMethods:
-            - GET
-            - HEAD
-          ForwardedValues:
-            QueryString: false
-        Enabled: true
-        DefaultRootObject: index.html
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6  # Managed-CachingOptimized
+        PriceClass: PriceClass_100
 
 Outputs:
   ApiEndpoint:
     Description: API Gateway endpoint URL
-    Value: !Sub "https://${AsporApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Value: !Sub 'https://${AsporApi}.execute-api.${AWS::Region}.amazonaws.com/prod'
   
   WebsiteURL:
     Description: CloudFront distribution URL
-    Value: !Sub "https://${WebsiteDistribution.DomainName}"
+    Value: !Sub 'https://${CloudFrontDistribution.DomainName}'
   
   DocumentsBucketName:
     Description: S3 bucket for documents

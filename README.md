@@ -1,13 +1,14 @@
-# CH-ASPOR 🚀
+# Plataforma de Extracción ASPOR - AWS + Bedrock Claude 🚀
 
 [![AWS](https://img.shields.io/badge/AWS-Serverless-FF9900?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/)
-[![Bedrock](https://img.shields.io/badge/Amazon%20Bedrock-Claude%204.0-232F3E?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/bedrock/)
+[![Bedrock](https://img.shields.io/badge/Amazon%20Bedrock-Claude%204.1-232F3E?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/bedrock/)
 [![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)
+[![SAM](https://img.shields.io/badge/AWS%20SAM-Infrastructure-FF9900?style=for-the-badge&logo=amazonaws)](https://aws.amazon.com/serverless/sam/)
 [![License](https://img.shields.io/badge/License-Proprietary-red?style=for-the-badge)](LICENSE)
 
 ## 📋 Descripción
 
-**CH-ASPOR** es una plataforma serverless de extracción y análisis de información legal que utiliza inteligencia artificial (Amazon Bedrock Claude 4.0) para procesar documentos societarios y generar informes profesionales automatizados.
+**Plataforma ASPOR** es un sistema serverless inteligente de análisis documental legal que utiliza **Amazon Bedrock Claude Opus 4.1** para validar poderes notariales (contragarantías) y generar informes societarios profesionales automatizados.
 
 ### 🎯 Casos de Uso Principales
 
@@ -17,7 +18,7 @@
 ## ✨ Características
 
 - 📄 **Procesamiento Multi-documento**: Hasta 3 archivos PDF/DOCX por ejecución
-- 🤖 **IA Avanzada**: Integración con Amazon Bedrock Claude 4.0
+- 🤖 **IA Avanzada**: Integración con Amazon Bedrock Claude Opus 4.1
 - 📊 **Dos Modelos Especializados**:
   - Modelo A: Contragarantías y análisis de poderes
   - Modelo B: Informes societarios profesionales
@@ -36,9 +37,10 @@ graph TB
     C --> D[Lambda Functions]
     D --> E[S3 Storage]
     D --> F[DynamoDB]
-    D --> G[Bedrock Claude 4.0]
-    G --> H[Report Generation]
-    H --> I[DOCX/PDF Output]
+    D --> G[Bedrock Claude 4.1]
+    D --> H[AWS Textract]
+    G --> I[Report Generation]
+    I --> J[DOCX/PDF Output]
 ```
 
 ### Componentes AWS
@@ -46,12 +48,12 @@ graph TB
 | Servicio | Función | Configuración |
 |----------|---------|---------------|
 | **Lambda** | Procesamiento serverless | Python 3.12, 3GB RAM, 900s timeout |
-| **API Gateway** | REST API | CORS habilitado, throttling 1000 req/s |
-| **S3** | Almacenamiento de documentos | Lifecycle 90 días, encriptación AES-256 |
-| **DynamoDB** | Metadata y estado | On-demand, point-in-time recovery |
-| **Bedrock** | Procesamiento IA | Claude 4.0, temperature 0.1 |
-| **CloudFront** | CDN para frontend | Cache behaviors optimizados |
-| **SSM** | Gestión de prompts | Parameter Store para configuración |
+| **API Gateway** | REST API | CORS habilitado |
+| **S3** | Almacenamiento de documentos | Encriptación AES-256 |
+| **DynamoDB** | Metadata y estado | On-demand billing |
+| **Bedrock** | Procesamiento IA | Claude Opus 4.1 |
+| **CloudFront** | CDN para frontend | Cache optimizado |
+| **Textract** | OCR documentos | Detección automática |
 
 ## 🚀 Instalación Rápida
 
@@ -59,7 +61,7 @@ graph TB
 
 - ✅ Cuenta AWS con acceso a Bedrock
 - ✅ AWS CLI configurado
-- ✅ SAM CLI instalado
+- ✅ PowerShell (Windows) o Bash (Linux/Mac)
 - ✅ Python 3.12+
 - ✅ Git
 
@@ -68,211 +70,232 @@ graph TB
 ```bash
 # 1. Clonar repositorio
 git clone https://github.com/dborra-83/CH-Aspor.git
-cd CH-Aspor/aspor-extraction-platform
+cd CH-Aspor
 
 # 2. Configurar AWS (si no está configurado)
 aws configure
 
-# 3. Desplegar
-chmod +x deploy.sh
-./deploy.sh
+# 3. Desplegar (Windows)
+cd aspor-extraction-platform
+.\deploy-windows.ps1
 ```
 
 ¡Listo! 🎉 La URL de tu aplicación aparecerá al finalizar.
 
-## 📖 Documentación Detallada
-
-### Estructura del Proyecto
-
-```
-CH-Aspor/
-├── 📄 CONTRAGARANTIAS.txt      # Prompt Modelo A
-├── 📄 INFORMES SOCIALES.txt    # Prompt Modelo B
-├── 📄 MASTER_PROMPT.md         # Documentación técnica completa
-├── aspor-extraction-platform/
-│   ├── 🏗️ template.yaml       # Infraestructura SAM
-│   ├── 📦 requirements.txt     # Dependencias Python
-│   ├── 🚀 deploy.sh           # Script de despliegue
-│   ├── 🔧 Makefile            # Comandos útiles
-│   ├── src/
-│   │   ├── handlers/          # Lambda functions
-│   │   ├── processors/        # Lógica de procesamiento
-│   │   └── generators/        # Generación de reportes
-│   └── frontend/
-│       └── index.html         # Interfaz web
-```
-
-### API Endpoints
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| `POST` | `/runs/presign` | Obtener URLs para upload |
-| `POST` | `/runs` | Crear nueva extracción |
-| `GET` | `/runs/{id}` | Consultar estado |
-| `GET` | `/runs` | Listar historial |
-| `DELETE` | `/runs/{id}` | Eliminar ejecución |
-
-### Modelos de Extracción
-
-#### 🔍 Modelo A - Contragarantías/ASPOR
-
-Analiza escrituras públicas para:
-- Validar facultades para suscribir pagarés
-- Identificar apoderados por clases (A, B, C)
-- Determinar grupos de actuación conjunta
-- Detectar vencimientos y restricciones
-- Generar matriz de validación completa
-
-#### 📊 Modelo B - Informes Sociales
-
-Genera informes profesionales con:
-- Información societaria completa
-- Objeto social (transcripción literal)
-- Capital social detallado
-- Tabla de socios y participaciones
-- Estructura administrativa
-- Antecedentes legales y notariales
-
-## 💻 Uso
+## 📖 Guía de Uso
 
 ### Interfaz Web
 
-1. Acceder a la URL proporcionada tras el despliegue
-2. Arrastrar o seleccionar archivos (máx. 3)
-3. Elegir modelo de extracción
-4. Seleccionar formato de salida
-5. Procesar y descargar
+1. **Acceder** a la URL de CloudFront proporcionada
+2. **Cargar** 1-3 archivos (PDF/DOCX)
+3. **Seleccionar** modelo:
+   - **Modelo A**: Para validación de contragarantías
+   - **Modelo B**: Para informes sociales
+4. **Elegir** formato de salida (DOCX/PDF)
+5. **Procesar** y descargar el reporte
 
-### API REST (Postman)
+### API REST
 
 ```bash
-# Importar colección
-postman_collection.json incluida en el proyecto
-
-# O usar curl
-curl -X POST https://api-url/runs \
+# 1. Obtener URL de carga
+curl -X POST https://[API_URL]/runs/presign \
   -H "Content-Type: application/json" \
-  -d '{"model":"A","files":["file1.pdf"],"outputFormat":"docx"}'
+  -d '{"file_count": 1}'
+
+# 2. Procesar documento
+curl -X POST https://[API_URL]/runs \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "A",
+    "files": ["s3_key"],
+    "fileNames": ["documento.pdf"],
+    "outputFormat": "docx"
+  }'
+
+# 3. Obtener resultado
+curl https://[API_URL]/runs/[RUN_ID]?userId=default-user
 ```
 
-### CLI (Make)
+## 📁 Estructura del Proyecto
 
-```bash
-make help          # Ver comandos disponibles
-make deploy        # Desplegar aplicación
-make update-prompts # Actualizar prompts
-make logs          # Ver logs en tiempo real
-make status        # Estado del stack
-make destroy       # Eliminar recursos
+```
+CH-Aspor/
+├── 📄 README.md                    # Este archivo
+├── 📄 MASTER_PROMPT.md             # Documentación técnica
+├── 📄 CONTRAGARANTIAS.txt          # Prompt Modelo A
+├── 📄 INFORMES SOCIALES.txt        # Prompt Modelo B
+└── aspor-extraction-platform/
+    ├── 🏗️ template.yaml           # Infraestructura SAM
+    ├── 🔧 deploy-windows.ps1       # Script despliegue Windows
+    ├── 🔧 deploy-processing.ps1    # Script funciones
+    ├── 📦 lambda_code_fixed.py     # Handler principal
+    ├── 📦 lambda_process_run.py    # Procesamiento Bedrock
+    ├── 📦 lambda_get_run.py        # Obtener run
+    ├── 📦 lambda_list_runs.py      # Listar historial
+    ├── 📦 lambda_delete_run.py     # Eliminar run
+    ├── 📦 lambda_presign.py        # URLs de carga
+    └── frontend/
+        └── index.html              # Interfaz web
 ```
 
-## 📊 Monitoreo y Métricas
+## 🔍 Modelos de Extracción
 
-### CloudWatch Dashboards
+### 📋 Modelo A - Contragarantías/ASPOR
 
-El sistema registra automáticamente:
-- ⏱️ Latencia de procesamiento
-- 📈 Tokens utilizados (entrada/salida)
-- ❌ Errores y excepciones
-- 📊 Métricas de uso por modelo
+**Analiza escrituras públicas para validar:**
+- ✅ Capacidad de firma de pagarés
+- ✅ Facultades para otorgar mandatos
+- ✅ Poder para contratar seguros
+- ✅ Identificación de apoderados por clases
+- ✅ Formas de actuación (individual/conjunta)
 
-### Costos Estimados
+**Salida:** Informe detallado con validación legal de poderes
 
-| Componente | Costo Mensual (100 docs) |
-|------------|-------------------------|
-| Lambda | ~$0.50 |
-| S3 | ~$2.00 |
-| DynamoDB | ~$1.00 |
-| Bedrock | ~$15.00 |
-| API Gateway | ~$1.00 |
-| **Total** | **~$20-25 USD** |
+### 📊 Modelo B - Informes Sociales
+
+**Extrae información societaria:**
+- 📌 Datos del cliente (razón social, RUT)
+- 📌 Objeto social completo
+- 📌 Capital social y distribución
+- 📌 Socios y participación
+- 📌 Estructura administrativa
+- 📌 Antecedentes notariales
+
+**Salida:** Informe social profesional estructurado
+
+## 📊 API Endpoints
+
+| Método | Endpoint | Descripción |
+|--------|----------|-------------|
+| `POST` | `/runs/presign` | Genera URLs para carga de archivos |
+| `POST` | `/runs` | Crea nueva ejecución |
+| `GET` | `/runs` | Lista historial de ejecuciones |
+| `GET` | `/runs/{runId}` | Obtiene detalles de ejecución |
+| `DELETE` | `/runs/{runId}` | Elimina ejecución |
 
 ## 🔧 Configuración Avanzada
 
 ### Actualizar Prompts
 
+Los prompts están almacenados en archivos de texto que pueden modificarse:
+
+1. Editar `CONTRAGARANTIAS.txt` o `INFORMES SOCIALES.txt`
+2. Los cambios se aplicarán en el próximo procesamiento
+
+### Variables de Entorno Lambda
+
 ```python
-# Método 1: Script Python
-python upload_prompts.py --region us-east-1
-
-# Método 2: Make
-make update-prompts
-
-# Método 3: AWS CLI
-aws ssm put-parameter \
-  --name "/aspor/prompts/agent-a-contragarantias" \
-  --value "$(cat CONTRAGARANTIAS.txt)" \
-  --overwrite
+DYNAMODB_TABLE = 'aspor-extractions'
+DOCUMENTS_BUCKET = 'aspor-documents-[ACCOUNT_ID]'
+BEDROCK_MODEL = 'anthropic.claude-opus-4-1-20250805-v1:0'
 ```
 
-### Variables de Entorno
+## 📈 Monitoreo
 
-```yaml
-BEDROCK_MODEL_ID: anthropic.claude-3-opus-20240229
-MAX_FILES: 3
-MAX_FILE_SIZE_MB: 25
-LAMBDA_TIMEOUT: 900
+### CloudWatch Logs
+
+```bash
+# Ver logs de procesamiento
+aws logs tail /aws/lambda/aspor-create-run --follow
+
+# Ver logs de errores
+aws logs filter-log-events \
+  --log-group-name /aws/lambda/aspor-process-run \
+  --filter-pattern "ERROR"
 ```
 
-## 🐛 Troubleshooting
+### Métricas Disponibles
 
-| Problema | Solución |
-|----------|----------|
-| **"Model not found"** | Habilitar Claude en Bedrock console |
-| **"Access Denied"** | Verificar permisos IAM |
-| **Procesamiento lento** | Aumentar memoria Lambda a 3008MB |
-| **PDF no se procesa** | Verificar que Textract esté disponible |
-| **Costos elevados** | Revisar métricas de tokens, ajustar temperature |
+- ⏱️ Tiempo de procesamiento por documento
+- 📊 Cantidad de ejecuciones por modelo
+- ❌ Tasa de error
+- 💾 Uso de almacenamiento S3
 
-## 🚦 Roadmap
+## 💰 Costos Estimados
 
-- [x] MVP con 2 modelos de extracción
-- [x] Generación DOCX/PDF
-- [x] Historial de ejecuciones
-- [ ] Autenticación con Cognito
-- [ ] Procesamiento batch (>3 archivos)
-- [ ] Dashboard analítico con QuickSight
-- [ ] API webhooks para integraciones
-- [ ] Caché de resultados frecuentes
+| Componente | Costo Mensual (100 docs) |
+|------------|-------------------------|
+| Lambda | ~$2.00 |
+| S3 | ~$1.00 |
+| DynamoDB | ~$1.00 |
+| Bedrock Claude | ~$20.00 |
+| API Gateway | ~$1.00 |
+| CloudFront | ~$1.00 |
+| **Total** | **~$26.00 USD** |
 
-## 🤝 Contribuir
+## 🐛 Solución de Problemas
 
-Las contribuciones son bienvenidas. Por favor:
+### Error: "Bedrock not available"
+```bash
+# Verificar acceso a Bedrock
+aws bedrock list-foundation-models --region us-east-1
+
+# Habilitar modelo en consola AWS
+```
+
+### Error: "500 Internal Server Error"
+```bash
+# Verificar permisos Lambda
+aws lambda get-function-configuration \
+  --function-name aspor-create-run \
+  --query 'Role'
+```
+
+### Error: "Run not found"
+```bash
+# Verificar datos en DynamoDB
+aws dynamodb scan \
+  --table-name aspor-extractions \
+  --region us-east-1
+```
+
+## 🔒 Seguridad
+
+- 🔐 URLs de descarga temporales (1 hora)
+- 🔐 Cifrado en reposo (S3 y DynamoDB)
+- 🔐 IAM roles con permisos mínimos
+- 🔐 CORS configurado para dominio específico
+- 🔐 Sin almacenamiento de credenciales
+
+## 🚧 Roadmap
+
+### v1.0 (Actual)
+- ✅ Procesamiento con Bedrock Claude 4.1
+- ✅ Generación DOCX/PDF
+- ✅ Interfaz web completa
+- ✅ Historial con descarga
+
+### v2.0 (Próximo)
+- [ ] Autenticación con AWS Cognito
+- [ ] Procesamiento batch de documentos
+- [ ] Exportación a Excel
+- [ ] API Keys para integración externa
+- [ ] Dashboard de métricas en tiempo real
+
+## 🤝 Contribución
 
 1. Fork el proyecto
-2. Crea una rama (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
+2. Crear rama (`git checkout -b feature/NuevaCaracteristica`)
+3. Commit cambios (`git commit -m 'Add: Nueva característica'`)
+4. Push a la rama (`git push origin feature/NuevaCaracteristica`)
+5. Abrir Pull Request
 
-## 📝 Licencia
+## 📄 Licencia
 
-Proyecto propietario para uso interno. Todos los derechos reservados.
+Propiedad de ASPOR. Uso interno únicamente.
 
-## 👥 Equipo
+## 👥 Créditos
 
-- **Desarrollo**: [@dborra-83](https://github.com/dborra-83)
-- **Arquitectura**: Serverless AWS
-- **IA**: Amazon Bedrock Claude 4.0
+- **Desarrollo**: Diego Borra - CloudHesive
+- **Cliente**: ASPOR
+- **Tecnología**: AWS + Amazon Bedrock Claude Opus 4.1
 
 ## 📞 Soporte
 
-- 📧 Email: [Contactar en GitHub](https://github.com/dborra-83)
-- 🐛 Issues: [GitHub Issues](https://github.com/dborra-83/CH-Aspor/issues)
-- 📚 Docs: Ver [MASTER_PROMPT.md](MASTER_PROMPT.md) para documentación técnica completa
-
-## 🙏 Agradecimientos
-
-- Amazon Web Services por la infraestructura cloud
-- Anthropic por Claude 4.0
-- La comunidad open source
+- 📧 Email: dborra@cloudhesive.com
+- 🐙 GitHub: https://github.com/dborra-83/CH-Aspor
+- 🐛 Issues: https://github.com/dborra-83/CH-Aspor/issues
 
 ---
 
-<div align="center">
-  
-**[⬆ Volver arriba](#ch-aspor-)**
-
-Hecho con ❤️ usando AWS Serverless
-
-</div>
+**Desarrollado con ❤️ para ASPOR | Powered by AWS & Claude AI**
