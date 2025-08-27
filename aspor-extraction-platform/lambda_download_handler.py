@@ -159,12 +159,16 @@ def handler(event, context):
         }
 
 def generate_docx(text, model):
-    """Generate a simple DOCX file"""
+    """Generate a DOCX file with proper UTF-8 encoding"""
     import io
     import zipfile
     
-    # Escape special XML characters
-    text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+    # Ensure text is UTF-8
+    if isinstance(text, bytes):
+        text = text.decode('utf-8')
+    
+    # Escape special XML characters properly
+    text = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;').replace('"', '&quot;').replace("'", '&apos;')
     
     # Create minimal DOCX structure
     content_types = '''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
@@ -185,25 +189,25 @@ def generate_docx(text, model):
     
     for para in paragraphs:
         if para.strip():
-            para_xml += f'<w:p><w:r><w:t>{para}</w:t></w:r></w:p>'
+            para_xml += f'<w:p><w:r><w:t xml:space="preserve">{para}</w:t></w:r></w:p>'
     
     title = "INFORME DE CONTRAGARANTÍAS" if model == 'A' else "INFORME SOCIAL CORPORATIVO"
     
     document = f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
     <w:body>
-        <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t>{title}</w:t></w:r></w:p>
+        <w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="32"/></w:rPr><w:t xml:space="preserve">{title}</w:t></w:r></w:p>
         <w:p><w:r><w:t></w:t></w:r></w:p>
         {para_xml}
     </w:body>
 </w:document>'''
     
-    # Create ZIP file
+    # Create ZIP file with UTF-8 encoding
     docx_buffer = io.BytesIO()
     with zipfile.ZipFile(docx_buffer, 'w', zipfile.ZIP_DEFLATED) as docx:
-        docx.writestr('[Content_Types].xml', content_types)
-        docx.writestr('_rels/.rels', rels)
-        docx.writestr('word/document.xml', document)
+        docx.writestr('[Content_Types].xml', content_types.encode('utf-8'))
+        docx.writestr('_rels/.rels', rels.encode('utf-8'))
+        docx.writestr('word/document.xml', document.encode('utf-8'))
     
     return docx_buffer.getvalue()
 

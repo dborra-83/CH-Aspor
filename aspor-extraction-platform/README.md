@@ -1,6 +1,6 @@
-# ASPOR - Plataforma de Extracción de Información
+# ASPOR Extraction Platform v1.1 - Technical Documentation
 
-Sistema serverless en AWS para extracción y análisis de documentos legales usando Amazon Bedrock Claude 4.0.
+Sistema serverless en AWS para extracción y análisis de documentos legales usando Amazon Bedrock Claude Opus 4.1.
 
 ## Características
 

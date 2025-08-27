@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(*)",
       "Bash(git init:*)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
@@ -12,7 +13,8 @@
       "Bash(aws lambda update-function-configuration:*)",
       "Bash(/dev/null)",
       "Bash(aws lambda add-permission:*)",
-      "Bash(aws lambda update-function-code:*)"
+      "Bash(aws lambda update-function-code:*)",
+      "Bash(aws apigatewayv2 get-apis:*)"
     ],
     "deny": [],
     "ask": [],

@@ -11,11 +11,13 @@ New-Item -ItemType Directory -Path $tempDir | Out-Null
 
 # Lambda functions to update
 $functions = @(
-    @{Name="aspor-create-run"; File="lambda_code.py"},
-    @{Name="aspor-get-run"; File="lambda_get_run.py"},
+    @{Name="aspor-create-run"; File="lambda_code_complete.py"},
+    @{Name="aspor-get-run"; File="lambda_get_run_simple.py"},
     @{Name="aspor-list-runs"; File="lambda_list_runs.py"},
     @{Name="aspor-delete-run"; File="lambda_delete_run.py"},
-    @{Name="aspor-presign"; File="lambda_presign.py"}
+    @{Name="aspor-presign"; File="lambda_presign.py"},
+    @{Name="aspor-preview-run"; File="lambda_preview_run.py"},
+    @{Name="aspor-download-handler"; File="lambda_download_handler.py"}
 )
 
 foreach ($func in $functions) {

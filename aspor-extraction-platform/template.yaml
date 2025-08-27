@@ -216,6 +216,24 @@ Resources:
             ApiId: !Ref AsporApi
             Path: /runs/{runId}
             Method: DELETE
+  
+  PreviewRunFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: aspor-preview-run
+      Handler: lambda_code.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref ExtractionsTable
+        - S3ReadPolicy:
+            BucketName: !Ref DocumentsBucket
+      Events:
+        ApiEvent:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref AsporApi
+            Path: /runs/{runId}/preview
+            Method: GET
 
   # Static Website
   WebsiteBucket:

@@ -1,6 +1,8 @@
-# MASTER PROMPT - Plataforma de Extracción ASPOR
+# MASTER PROMPT - Plataforma de Extracción ASPOR v1.1
 
 ## 🎯 Prompt para Replicar el Sistema Completo
+
+**Última actualización**: Agosto 2025
 
 Si necesitas recrear este sistema desde cero, usa el siguiente prompt con Claude o cualquier asistente de IA:
 
@@ -31,13 +33,18 @@ FUNCIONALIDADES:
 2. Selección de modelo de análisis (A o B)
 3. Generación de reportes en DOCX/PDF
 4. Historial de ejecuciones con descarga
-5. Interfaz web responsive
+5. Interfaz web responsive moderna
+6. Vista previa de documentos
+7. Generación dinámica de formatos
+8. Gestión de prompts desde S3/SSM
 
 ENDPOINTS API:
 - POST /runs/presign - URLs para carga
 - POST /runs - Crear ejecución
 - GET /runs - Listar historial
 - GET /runs/{id} - Detalles
+- GET /runs/{id}/preview - Vista previa
+- GET /runs/{id}/download/{format} - Descarga formato específico
 - DELETE /runs/{id} - Eliminar
 
 ESTRUCTURA DYNAMODB:
@@ -555,5 +562,5 @@ curl https://[API_URL]/health
 ---
 
 **Última actualización**: Agosto 2025
-**Versión**: 1.0.0
+**Versión**: 1.1.0
 **Desarrollado por**: Diego Borra - CloudHesive para ASPOR

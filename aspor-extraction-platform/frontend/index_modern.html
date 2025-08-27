@@ -1241,28 +1241,7 @@
                 updateStats();
                 
                 tbody.innerHTML = data.runs.map(run => {
-                    // Parse UTC date and convert to local time
-                    const utcDate = new Date(run.startedAt);
-                    // The date is already in local time when displayed
-                    const localDate = new Date(utcDate.getTime());
-                    
-                    // Format date and time for Chilean timezone (or user's local timezone)
-                    const dateOptions = {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                    };
-                    const timeOptions = {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        hour12: false,
-                        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-                    };
-                    
-                    const formattedDate = localDate.toLocaleDateString('es-CL', dateOptions);
-                    const formattedTime = localDate.toLocaleTimeString('es-CL', timeOptions);
-                    
+                    const date = new Date(run.startedAt);
                     const filesDisplay = run.fileNames?.slice(0, 2).join(', ') || 'Sin archivos';
                     const hasMore = run.fileNames?.length > 2;
                     const modelName = run.model === 'A' ? 'Contragarantías' : 'Informes Sociales';
@@ -1270,7 +1249,7 @@
                     
                     return `
                         <tr>
-                            <td title="${localDate.toISOString()}">${formattedDate} ${formattedTime}</td>
+                            <td>${date.toLocaleDateString('es-CL')} ${date.toLocaleTimeString('es-CL', {hour: '2-digit', minute: '2-digit'})}</td>
                             <td title="${run.fileNames?.join(', ') || ''}">
                                 ${filesDisplay}${hasMore ? ` (+${run.fileNames.length - 2})` : ''}
                             </td>

@@ -2,7 +2,7 @@
 
 ## 🤖 Contexto para el Asistente de IA
 
-Eres un asistente especializado en el mantenimiento y desarrollo de la **Plataforma ASPOR**, un sistema serverless de análisis documental legal que utiliza AWS Bedrock Claude para procesar escrituras públicas.
+Eres un asistente especializado en el mantenimiento y desarrollo de la **Plataforma ASPOR v1.1**, un sistema serverless de análisis documental legal que utiliza AWS Bedrock Claude para procesar escrituras públicas.
 
 ## 📋 Información del Proyecto
 
@@ -45,14 +45,20 @@ CH-Aspor/
 └── aspor-extraction-platform/
     ├── 🏗️ template.yaml        # Infraestructura principal
     ├── 🔧 deploy-windows.ps1    # Script de despliegue
+    ├── 🔧 update-lambdas.ps1     # Script de actualización rápida
     ├── 📦 Lambda Functions:
     │   ├── lambda_code_fixed.py    # Handler principal con procesamiento
+    │   ├── lambda_process_run.py   # Procesamiento con Bedrock
+    │   ├── lambda_download_handler.py # Nueva: Manejo de descargas
+    │   ├── lambda_preview_run.py    # Nueva: Vista previa
     │   ├── lambda_presign.py       # Genera URLs de carga
     │   ├── lambda_get_run.py       # Obtiene detalles de ejecución
     │   ├── lambda_list_runs.py     # Lista historial
     │   └── lambda_delete_run.py    # Elimina ejecuciones
     └── frontend/
-        └── index.html           # Interfaz web completa
+        ├── index.html           # Interfaz web principal
+        ├── index_modern.html    # Nueva UI moderna
+        └── index_preview.html   # UI con preview
 ```
 
 ## 🎯 Tareas Comunes y Soluciones
@@ -150,6 +156,35 @@ NewEndpointFunction:
           Path: /new-endpoint
           Method: POST
 ```
+
+## 🆕 Nuevas Funcionalidades v1.1
+
+### Vista Previa de Documentos
+```python
+# Endpoint: GET /runs/{runId}/preview
+# Función: lambda_preview_run.py
+# Permite visualizar el contenido procesado antes de descargar
+```
+
+### Descarga Dinámica de Formatos
+```python
+# Endpoint: GET /runs/{runId}/download/{format}
+# Función: lambda_download_handler.py
+# Genera DOCX/PDF on-demand si no existe
+```
+
+### Gestión Mejorada de Prompts
+```python
+# Los prompts ahora se cargan desde:
+# 1. S3: prompts/contragarantias.txt y prompts/informes-sociales.txt
+# 2. SSM Parameters (fallback)
+# 3. Prompts hardcodeados (ultimo recurso)
+```
+
+### Interfaz Moderna
+- `index_modern.html`: Nueva UI con diseño profesional
+- `index_preview.html`: Versión con capacidad de preview
+- Variables CSS personalizadas para temas
 
 ## 🔧 Configuraciones Importantes
 
@@ -339,5 +374,5 @@ Cuando trabajes en este proyecto:
 ---
 
 **Última actualización**: Agosto 2025
-**Versión**: 1.0.0
+**Versión**: 1.1.0
 **Estado**: ✅ Producción

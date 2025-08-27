@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPOR - Plataforma de Extracción de Información</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            color: #666;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #555;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .file-upload-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .file-upload-btn:hover {
+            background: #5a67d8;
+        }
+        
+        .file-list {
+            margin-top: 10px;
+            padding: 10px;
+            background: #f7f7f7;
+            border-radius: 5px;
+            min-height: 60px;
+        }
+        
+        .file-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px;
+            margin: 5px 0;
+            background: white;
+            border-radius: 3px;
+        }
+        
+        .file-item button {
+            background: #e53e3e;
+            color: white;
+            border: none;
+            padding: 2px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background: white;
+        }
+        
+        .btn {
+            padding: 12px 30px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+            width: 100%;
+        }
+        
+        .btn:hover {
+            background: #5a67d8;
+        }
+        
+        .btn:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        
+        .status-success {
+            background: #c6f6d5;
+            color: #22543d;
+            border: 1px solid #9ae6b4;
+        }
+        
+        .status-error {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+        }
+        
+        .status-info {
+            background: #bee3f8;
+            color: #2c5282;
+            border: 1px solid #90cdf4;
+        }
+        
+        .history-card {
+            grid-column: 1 / -1;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        
+        th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        tr:hover {
+            background: #f7fafc;
+        }
+        
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        
+        .status-completed {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+        
+        .status-processing {
+            background: #feebc8;
+            color: #7c2d12;
+        }
+        
+        .status-failed {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+        
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            text-decoration: underline;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .icon-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            color: #667eea;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+        
+        .icon-btn:hover {
+            transform: scale(1.2);
+        }
+        
+        .icon-btn.download {
+            color: #48bb78;
+        }
+        
+        .icon-btn.preview {
+            color: #4299e1;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        
+        .modal-content {
+            background-color: #fff;
+            margin: 2% auto;
+            padding: 0;
+            width: 90%;
+            max-width: 1000px;
+            border-radius: 10px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+        }
+        
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+        
+        .close:hover {
+            opacity: 0.8;
+        }
+        
+        .modal-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        
+        .modal-footer {
+            padding: 20px 30px;
+            background: #f7fafc;
+            border-top: 1px solid #e2e8f0;
+            border-radius: 0 0 10px 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .download-btn {
+            padding: 10px 20px;
+            background: #48bb78;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        
+        .download-btn:hover {
+            background: #38a169;
+        }
+        
+        .download-btn.pdf {
+            background: #e53e3e;
+        }
+        
+        .download-btn.pdf:hover {
+            background: #c53030;
+        }
+        
+        /* Preview Content Styles */
+        .preview-header {
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .preview-header h2 {
+            color: #2d3748;
+            margin-bottom: 5px;
+        }
+        
+        .files-info {
+            color: #718096;
+            font-size: 14px;
+        }
+        
+        .preview-body {
+            line-height: 1.6;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f7fafc;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h3 {
+            color: #2d3748;
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        
+        .section h4 {
+            color: #4a5568;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        
+        .section p {
+            color: #4a5568;
+            margin-bottom: 8px;
+        }
+        
+        .section ul {
+            margin-left: 20px;
+            color: #4a5568;
+        }
+        
+        .section.validation {
+            border-left-color: #48bb78;
+            background: #f0fff4;
+        }
+        
+        .section.alert {
+            border-left-color: #f56565;
+            background: #fff5f5;
+        }
+        
+        .alert-title {
+            color: #c53030;
+        }
+        
+        .alert-content {
+            color: #742a2a;
+        }
+        
+        .report-title {
+            color: #2d3748;
+            border-bottom: 1px solid #cbd5e0;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 ASPOR - Plataforma de Extracción de Información</h1>
+            <p>Sistema inteligente de análisis documental con IA</p>
+        </div>
+        
+        <div class="main-content">
+            <div class="card">
+                <h2>📁 Nueva Extracción</h2>
+                <form id="extractionForm">
+                    <div class="form-group">
+                        <label>Documentos (máximo 3 archivos)</label>
+                        <label for="fileInput" class="file-upload-btn">
+                            Seleccionar Archivos
+                        </label>
+                        <input type="file" id="fileInput" multiple accept=".pdf,.docx" />
+                        <div class="file-list" id="fileList">
+                            <p style="color: #999;">No hay archivos seleccionados</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="modelSelect">Modelo de Extracción</label>
+                        <select id="modelSelect" required>
+                            <option value="">Seleccione un modelo</option>
+                            <option value="A">Contragarantías/ASPOR - Validación de capacidad de firma</option>
+                            <option value="B">Informes Sociales - Generación de reportes corporativos</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="outputFormat">Formato de Salida</label>
+                        <select id="outputFormat">
+                            <option value="docx">Word (DOCX)</option>
+                            <option value="pdf">PDF</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn" id="processBtn">
+                        Procesar Documentos
+                    </button>
+                </form>
+                
+                <div id="statusMessage"></div>
+            </div>
+            
+            <div class="card">
+                <h2>📊 Información del Sistema</h2>
+                <div style="padding: 10px 0;">
+                    <h3 style="color: #667eea; margin-bottom: 15px;">Modelos Disponibles</h3>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #333;">Modelo A: Contragarantías/ASPOR</h4>
+                        <p style="color: #666; font-size: 14px;">
+                            Analiza documentos legales para validar la capacidad de firma de contragarantías.
+                            Verifica poderes, facultades y restricciones legales.
+                        </p>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #333;">Modelo B: Informes Sociales</h4>
+                        <p style="color: #666; font-size: 14px;">
+                            Genera reportes corporativos profesionales a partir de información empresarial.
+                            Ideal para análisis y presentaciones ejecutivas.
+                        </p>
+                    </div>
+                    
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e2e8f0;">
+                        <p style="color: #999; font-size: 12px;">
+                            Powered by Claude 4.1 (Sonnet) • AWS Bedrock
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card history-card">
+            <h2>📜 Historial de Ejecuciones</h2>
+            <table id="historyTable">
+                <thead>
+                    <tr>
+                        <th>Fecha</th>
+                        <th>Archivos</th>
+                        <th>Modelo</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="historyBody">
+                    <tr>
+                        <td colspan="5" style="text-align: center; color: #999;">Cargando historial...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    <!-- Modal de Preview -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Vista Previa del Reporte</h2>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <p>Cargando contenido...</p>
+            </div>
+            <div class="modal-footer">
+                <div class="files-info" id="modalFiles"></div>
+                <div class="download-buttons" id="downloadButtons">
+                    <!-- Download buttons will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE_URL = 'https://bsdxo3p5tc.execute-api.us-east-1.amazonaws.com/prod';
+        let selectedFiles = [];
+        
+        // File handling
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 3) {
+                alert('Máximo 3 archivos permitidos');
+                e.target.value = '';
+                return;
+            }
+            selectedFiles = files;
+            displayFiles();
+        });
+        
+        function displayFiles() {
+            const fileList = document.getElementById('fileList');
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<p style="color: #999;">No hay archivos seleccionados</p>';
+                return;
+            }
+            
+            fileList.innerHTML = selectedFiles.map((file, index) => `
+                <div class="file-item">
+                    <span>${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)</span>
+                    <button type="button" onclick="removeFile(${index})">Eliminar</button>
+                </div>
+            `).join('');
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            displayFiles();
+        }
+        
+        // Form submission
+        document.getElementById('extractionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const model = document.getElementById('modelSelect').value;
+            const outputFormat = document.getElementById('outputFormat').value;
+            
+            if (!model || selectedFiles.length === 0) {
+                alert('Por favor seleccione archivos y un modelo');
+                return;
+            }
+            
+            const processBtn = document.getElementById('processBtn');
+            processBtn.disabled = true;
+            processBtn.textContent = 'Procesando...';
+            
+            try {
+                // Step 1: Get presigned URLs
+                showStatus('info', 'Obteniendo URLs de carga...');
+                const files = selectedFiles;
+                
+                const presignResponse = await fetch(`${API_BASE_URL}/runs/presign`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fileNames: files.map(f => f.name)
+                    })
+                });
+                
+                if (!presignResponse.ok) {
+                    throw new Error('Error al obtener URLs de carga');
+                }
+                
+                const presignData = await presignResponse.json();
+                
+                // Step 2: Upload files
+                showStatus('info', 'Subiendo archivos...');
+                const uploadedKeys = [];
+                
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const presignedUrl = presignData.presigned_urls[i];
+                    
+                    const formData = new FormData();
+                    Object.entries(presignedUrl.fields).forEach(([key, value]) => {
+                        formData.append(key, value);
+                    });
+                    formData.append('file', file);
+                    
+                    const uploadResponse = await fetch(presignedUrl.url, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    if (!uploadResponse.ok) {
+                        throw new Error(`Error al subir ${file.name}`);
+                    }
+                    
+                    uploadedKeys.push(presignedUrl.s3_key);
+                }
+                
+                // Step 3: Process documents
+                showStatus('info', 'Procesando documentos con IA...');
+                
+                const processResponse = await fetch(`${API_BASE_URL}/runs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: model,
+                        files: uploadedKeys,
+                        fileNames: files.map(f => f.name),
+                        outputFormat: outputFormat
+                    })
+                });
+                
+                if (!processResponse.ok) {
+                    throw new Error('Error al procesar documentos');
+                }
+                
+                const processData = await processResponse.json();
+                
+                // Step 4: Show download link
+                if (processData.status === 'COMPLETED' && processData.output && processData.output.downloadUrl) {
+                    showStatus('success', `
+                        Procesamiento completado exitosamente!<br>
+                        <a href="${processData.output.downloadUrl}" target="_blank" style="color: #667eea;">
+                            Descargar Reporte ${outputFormat.toUpperCase()}
+                        </a>
+                    `);
+                } else if (processData.status === 'COMPLETED') {
+                    showStatus('success', 'Procesamiento completado. Puede ver y descargar el reporte desde el historial.');
+                } else {
+                    showStatus('info', `Procesamiento iniciado. ID: ${processData.runId}`);
+                }
+                
+                // Clear form
+                selectedFiles = [];
+                displayFiles();
+                document.getElementById('fileInput').value = '';
+                document.getElementById('modelSelect').value = '';
+                
+                // Refresh history
+                loadHistory();
+                
+            } catch (error) {
+                showStatus('error', error.message);
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = 'Procesar Documentos';
+            }
+        });
+        
+        function showStatus(type, message) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.innerHTML = message;
+            statusDiv.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 5000);
+            }
+        }
+        
+        // History management
+        async function loadHistory() {
+            const tbody = document.getElementById('historyBody');
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/runs?userId=default-user`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar historial');
+                }
+                
+                const data = await response.json();
+                
+                if (!data.runs || data.runs.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No hay ejecuciones previas</td></tr>';
+                    return;
+                }
+                
+                tbody.innerHTML = '';
+                data.runs.forEach(run => {
+                    const row = document.createElement('tr');
+                    let displayName = 'Sin archivos';
+                    
+                    if (run.fileNames && run.fileNames.length > 0) {
+                        displayName = run.fileNames.slice(0, 2).join(', ');
+                        if (run.fileNames.length > 2) {
+                            displayName += ` (+${run.fileNames.length - 2})`;
+                        }
+                    } else if (run.displayName) {
+                        displayName = run.displayName;
+                    }
+                    
+                    const modelName = run.modelName || (run.model === 'A' ? 'Contragarantías/ASPOR' : 'Informes Sociales');
+                    
+                    row.innerHTML = `
+                        <td>${new Date(run.startedAt).toLocaleString('es-CL')}</td>
+                        <td title="${run.fileNames ? run.fileNames.join(', ') : ''}" style="max-width: 200px; overflow: hidden; text-overflow: ellipsis;">${displayName}</td>
+                        <td>${modelName}</td>
+                        <td><span class="status-badge status-${run.status.toLowerCase()}">${run.status}</span></td>
+                        <td>
+                            <div class="action-buttons">
+                                ${run.status === 'COMPLETED' ? 
+                                    `<button class="icon-btn preview" onclick="previewReport('${run.runId}')" title="Ver reporte">
+                                        🔍
+                                    </button>
+                                    <button class="icon-btn download" onclick="downloadReport('${run.runId}')" title="Descargar">
+                                        ⬇️
+                                    </button>` : 
+                                    '-'
+                                }
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error: ${error.message}</td></tr>`;
+            }
+        }
+        
+        async function previewReport(runId) {
+            const modal = document.getElementById('previewModal');
+            const modalContent = document.getElementById('previewContent');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalFiles = document.getElementById('modalFiles');
+            const downloadButtons = document.getElementById('downloadButtons');
+            
+            modal.style.display = 'block';
+            modalContent.innerHTML = '<p>Cargando contenido...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/runs/${runId}/preview?userId=default-user`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al cargar vista previa');
+                }
+                
+                const data = await response.json();
+                
+                modalTitle.textContent = `Vista Previa - ${data.modelName}`;
+                modalFiles.textContent = `Archivos: ${data.fileNames.join(', ')}`;
+                modalContent.innerHTML = data.previewContent || '<p>No hay contenido disponible</p>';
+                
+                // Add download buttons
+                downloadButtons.innerHTML = '';
+                if (data.downloadUrls.docx) {
+                    downloadButtons.innerHTML += `
+                        <a href="${data.downloadUrls.docx}" class="download-btn" download>
+                            📄 Descargar Word
+                        </a>
+                    `;
+                }
+                if (data.downloadUrls.pdf) {
+                    downloadButtons.innerHTML += `
+                        <a href="${data.downloadUrls.pdf}" class="download-btn pdf" download>
+                            📑 Descargar PDF
+                        </a>
+                    `;
+                }
+                
+            } catch (error) {
+                modalContent.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function downloadReport(runId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/runs/${runId}?userId=default-user`);
+                
+                if (!response.ok) {
+                    throw new Error('Error al obtener información del reporte');
+                }
+                
+                const data = await response.json();
+                
+                if (data.output) {
+                    const url = data.output.downloadUrl || 
+                               data.output.docx_url || 
+                               data.output.pdf_url ||
+                               data.downloadUrl;
+                    
+                    if (url) {
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.target = '_blank';
+                        link.download = `reporte_${runId.substring(0, 8)}.${data.outputFormat || 'pdf'}`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    } else {
+                        throw new Error('URL de descarga no disponible');
+                    }
+                } else {
+                    throw new Error('Archivo no disponible');
+                }
+            } catch (error) {
+                console.error('Error downloading:', error);
+                alert(`Error al descargar: ${error.message}`);
+            }
+        }
+        
+        // Modal controls
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('previewModal').style.display = 'none';
+        }
+        
+        window.onclick = function(event) {
+            const modal = document.getElementById('previewModal');
+            if (event.target == modal) {
+                modal.style.display = 'none';
+            }
+        }
+        
+        // Load history on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadHistory();
+        });
+    </script>
+</body>
+</html>

@@ -8,7 +8,7 @@
 
 ## 📋 Descripción
 
-**Plataforma ASPOR** es un sistema serverless inteligente de análisis documental legal que utiliza **Amazon Bedrock Claude Opus 4.1** para validar poderes notariales (contragarantías) y generar informes societarios profesionales automatizados.
+**Plataforma ASPOR v1.1** es un sistema serverless inteligente de análisis documental legal que utiliza **Amazon Bedrock Claude Opus 4.1** para validar poderes notariales (contragarantías) y generar informes societarios profesionales automatizados.
 
 ### 🎯 Casos de Uso Principales
 
@@ -17,6 +17,13 @@
 
 ## ✨ Características
 
+### Nuevas en v1.1
+- 🎨 **Interfaz Moderna**: Nueva UI mejorada con diseño profesional
+- 👁️ **Vista Previa**: Preview del contenido antes de descarga
+- 📥 **Descarga Dinámica**: Generación on-demand de DOCX/PDF
+- 🗂️ **Gestión de Prompts**: Carga dinámica desde S3 con fallback SSM
+
+### Características Core
 - 📄 **Procesamiento Multi-documento**: Hasta 3 archivos PDF/DOCX por ejecución
 - 🤖 **IA Avanzada**: Integración con Amazon Bedrock Claude Opus 4.1
 - 📊 **Dos Modelos Especializados**:
@@ -121,21 +128,26 @@ curl https://[API_URL]/runs/[RUN_ID]?userId=default-user
 ```
 CH-Aspor/
 ├── 📄 README.md                    # Este archivo
-├── 📄 MASTER_PROMPT.md             # Documentación técnica
+├── 📄 MASTER_PROMPT.md             # Documentación técnica detallada
+├── 📄 CLAUDE.md                    # Guía para asistentes IA
 ├── 📄 CONTRAGARANTIAS.txt          # Prompt Modelo A
 ├── 📄 INFORMES SOCIALES.txt        # Prompt Modelo B
 └── aspor-extraction-platform/
-    ├── 🏗️ template.yaml           # Infraestructura SAM
+    ├── 🏗️ template.yaml           # Infraestructura SAM completa
     ├── 🔧 deploy-windows.ps1       # Script despliegue Windows
-    ├── 🔧 deploy-processing.ps1    # Script funciones
-    ├── 📦 lambda_code_fixed.py     # Handler principal
+    ├── 🔧 update-lambdas.ps1       # Actualización rápida de funciones
+    ├── 📦 lambda_code_fixed.py     # Handler principal mejorado
     ├── 📦 lambda_process_run.py    # Procesamiento Bedrock
-    ├── 📦 lambda_get_run.py        # Obtener run
+    ├── 📦 lambda_download_handler.py # Nueva: Manejo de descargas
+    ├── 📦 lambda_preview_run.py    # Nueva: Vista previa
+    ├── 📦 lambda_get_run.py        # Obtener run mejorado
     ├── 📦 lambda_list_runs.py      # Listar historial
     ├── 📦 lambda_delete_run.py     # Eliminar run
     ├── 📦 lambda_presign.py        # URLs de carga
     └── frontend/
-        └── index.html              # Interfaz web
+        ├── index.html              # Interfaz web principal
+        ├── index_modern.html       # Nueva UI moderna
+        └── index_preview.html      # UI con preview
 ```
 
 ## 🔍 Modelos de Extracción
@@ -171,6 +183,8 @@ CH-Aspor/
 | `POST` | `/runs` | Crea nueva ejecución |
 | `GET` | `/runs` | Lista historial de ejecuciones |
 | `GET` | `/runs/{runId}` | Obtiene detalles de ejecución |
+| `GET` | `/runs/{runId}/preview` | **Nuevo**: Vista previa del contenido |
+| `GET` | `/runs/{runId}/download/{format}` | **Nuevo**: Descarga en formato específico |
 | `DELETE` | `/runs/{runId}` | Elimina ejecución |
 
 ## 🔧 Configuración Avanzada
@@ -259,11 +273,18 @@ aws dynamodb scan \
 
 ## 🚧 Roadmap
 
-### v1.0 (Actual)
+### v1.0 (Completado)
 - ✅ Procesamiento con Bedrock Claude 4.1
 - ✅ Generación DOCX/PDF
 - ✅ Interfaz web completa
 - ✅ Historial con descarga
+
+### v1.1 (Actual - Agosto 2025)
+- ✅ Nueva interfaz moderna mejorada
+- ✅ Vista previa de documentos
+- ✅ Generación dinámica de formatos
+- ✅ Gestión mejorada de prompts
+- ✅ Optimización de rendimiento
 
 ### v2.0 (Próximo)
 - [ ] Autenticación con AWS Cognito
