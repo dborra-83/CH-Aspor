@@ -14,7 +14,8 @@
       "Bash(/dev/null)",
       "Bash(aws lambda add-permission:*)",
       "Bash(aws lambda update-function-code:*)",
-      "Bash(aws apigatewayv2 get-apis:*)"
+      "Bash(aws apigatewayv2 get-apis:*)",
+      "Bash(powershell:*)"
     ],
     "deny": [],
     "ask": [],
