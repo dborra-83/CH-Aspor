@@ -16,6 +16,7 @@ from botocore.exceptions import ClientError
 dynamodb = boto3.resource('dynamodb')
 s3_client = boto3.client('s3')
 bedrock_client = boto3.client('bedrock-runtime')
+textract_client = boto3.client('textract')
 
 # Environment variables
 table_name = os.environ.get('DYNAMODB_TABLE', 'aspor-extractions')
@@ -24,7 +25,7 @@ table = dynamodb.Table(table_name)
 
 # Configuration
 REGION = 'us-east-1'
-BEDROCK_MODEL = 'anthropic.claude-3-haiku-20240307-v1:0'  # Using Haiku for speed
+BEDROCK_MODEL = 'anthropic.claude-3-sonnet-20240229-v1:0'  # Using Claude 3 Sonnet (works with on-demand)
 MAX_FILES_PER_RUN = 3
 MAX_FILE_SIZE_MB = 25
 ALLOWED_EXTENSIONS = ['pdf', 'docx', 'doc', 'txt']
@@ -74,24 +75,82 @@ def validate_file(file_key: str) -> Tuple[bool, Optional[str]]:
 
 
 def extract_text_from_s3(s3_key: str) -> str:
-    """Extract text content from S3 file"""
+    """Extract text content from S3 file using Textract for PDFs"""
     try:
         # Validate file first
         is_valid, error = validate_file(s3_key)
         if not is_valid:
             return f"Error: {error}"
         
-        # Get object from S3
+        print(f"Extracting text from: {s3_key}")
+        
+        # For PDFs and images, use Textract (synchronous only for speed)
+        if not '.' in s3_key or s3_key.lower().endswith(('.pdf', '.png', '.jpg', '.jpeg')):
+            print(f"Using Textract for file: {s3_key}")
+            try:
+                # Use synchronous detection for single-page documents
+                textract_response = textract_client.detect_document_text(
+                    Document={
+                        'S3Object': {
+                            'Bucket': bucket_name,
+                            'Name': s3_key
+                        }
+                    }
+                )
+                
+                extracted_text = ""
+                blocks = textract_response.get('Blocks', [])
+                print(f"Textract returned {len(blocks)} blocks")
+                
+                for item in blocks:
+                    if item['BlockType'] == 'LINE':
+                        text = item.get('Text', '')
+                        if text:
+                            extracted_text += text + '\n'
+                
+                if extracted_text:
+                    print(f"Extracted {len(extracted_text)} characters from document")
+                    return sanitize_user_input(extracted_text[:10000])
+                else:
+                    print(f"No text extracted from {s3_key}, trying as binary")
+                    
+            except Exception as textract_error:
+                error_str = str(textract_error)
+                print(f"Textract error: {error_str}")
+                
+                # If it's a PDF that Textract can't handle with detect_document_text,
+                # return a message indicating we need the text content
+                if 'UnsupportedDocumentException' in error_str or 'InvalidParameterException' in error_str:
+                    return """NOTA: El documento PDF no pudo ser procesado directamente con OCR.
+                    
+Para documentos PDF complejos, por favor asegúrese de que:
+1. El PDF contenga texto seleccionable (no solo imágenes escaneadas)
+2. El documento no esté protegido con contraseña
+3. El archivo no exceda los 5MB de tamaño
+
+Alternativamente, puede convertir el documento a formato de texto antes de subirlo."""
+                
+                # For other errors, try reading as binary
+                pass
+        
+        # For text files or if Textract fails, try direct reading
         response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
         content = response['Body'].read()
         
         # Try to decode as text
         try:
             text = content.decode('utf-8')
+            print(f"Read {len(text)} characters as UTF-8 from {s3_key}")
             return sanitize_user_input(text)
         except UnicodeDecodeError:
-            # Binary file, return placeholder
-            return "Documento binario cargado para análisis."
+            # Try Latin-1 encoding
+            try:
+                text = content.decode('latin-1')
+                print(f"Read {len(text)} characters as Latin-1 from {s3_key}")
+                return sanitize_user_input(text)
+            except:
+                print(f"Could not decode {s3_key} as text")
+                return "No se pudo leer el contenido del documento."
             
     except ClientError as e:
         error_code = e.response['Error']['Code']
@@ -103,82 +162,12 @@ def extract_text_from_s3(s3_key: str) -> str:
             return "Error al leer el documento."
     except Exception as e:
         print(f"Unexpected error reading {s3_key}: {str(e)}")
-        return "Documento de prueba para análisis ASPOR."
+        import traceback
+        print(traceback.format_exc())
+        return "Error procesando el documento."
 
 
-def generate_mock_report(model_type: str, file_names: list) -> str:
-    """Generate detailed mock report"""
-    file_name = file_names[0] if file_names else "documento.pdf"
-    date_str = datetime.now().strftime("%d/%m/%Y")
-    
-    if model_type == 'A':
-        return f"""INFORME DE ANÁLISIS DE PODERES - ASPOR
-=============================================
-Fecha: {date_str}
-Documento analizado: {file_name}
-
-INFORMACIÓN SOCIETARIA
-----------------------
-Razón Social: EMPRESA DEMO S.A.
-RUT: 76.123.456-7
-Tipo: Sociedad Anónima
-Domicilio: Av. Providencia 1234, Santiago, Chile
-
-VALIDACIÓN PARA CONTRAGARANTÍAS
--------------------------------
-APODERADOS CLASE A:
-1. Juan Carlos Pérez González
-   RUT: 12.345.678-9
-   Facultades: Suscribir pagarés, otorgar mandatos, contratar seguros
-   
-2. María Isabel González Silva
-   RUT: 10.987.654-3
-   Facultades: Suscribir pagarés, otorgar mandatos, contratar seguros
-
-CONCLUSIÓN
-----------
-Los apoderados identificados PUEDEN firmar contragarantías para ASPOR.
-
----
-Informe generado automáticamente
-Sistema de Análisis ASPOR v1.1"""
-    else:
-        return f"""INFORME SOCIAL
-================
-Santiago, {date_str}
-
-CLIENTE: EMPRESA DEMO S.A.
-R.U.T. 76.123.456-7
-
-1. OBJETO SOCIAL
----------------
-El desarrollo de actividades comerciales e industriales en general.
-
-2. CAPITAL SOCIAL
-----------------
-Capital Total: $100.000.000 (cien millones de pesos)
-Capital Pagado: $100.000.000
-
-3. SOCIOS Y PARTICIPACIÓN
-------------------------
-R.U.T.          Nombre                      % Capital
-12.345.678-9    Juan Pérez González         40%
-10.987.654-3    María González Silva        35%
-11.222.333-4    Pedro Rodríguez López       25%
-
-4. ADMINISTRACIÓN
-----------------
-Tipo: Directorio
-Número de miembros: 5 directores titulares
-
-5. DOMICILIO
------------
-Domicilio Legal: Santiago, Región Metropolitana
-Dirección: Av. Providencia 1234, Oficina 567, Providencia
-
----
-Informe emitido para fines informativos
-Documento analizado: {file_name}"""
+# Mock report function removed to ensure real Bedrock processing
 
 
 def call_bedrock(model_type: str, text: str, file_names: list) -> str:
@@ -187,42 +176,110 @@ def call_bedrock(model_type: str, text: str, file_names: list) -> str:
         # Sanitize input text
         text = sanitize_user_input(text)
         
+        # Use more text for analysis (up to 10000 characters)
+        text_for_analysis = text[:10000]
+        
         # Create prompt based on model type
         if model_type == 'A':
-            prompt = f"""Analiza este documento para validar capacidad de firma de contragarantías ASPOR.
-            
-Documento: {file_names[0] if file_names else 'Documento'}
+            # Complete CONTRAGARANTIAS prompt
+            prompt = f"""Eres un asistente especializado en análisis legal de escrituras públicas para ASPOR, enfocado en validar capacidad de firma de contragarantías.
+
+CONTEXTO CRÍTICO:
+- Proceso ASPOR: Cuando cobran una póliza por incumplimiento, necesitan repetir contra el afianzado
+- Contragarantía: Es un mandato que permite suscribir pagarés para facilitar cobro ejecutivo
+- Objetivo: Identificar quién puede firmar contragarantías según sus facultades legales
+
+Documentos analizados: {', '.join(file_names) if file_names else 'Documentos'}
 
 Contenido:
-{text[:3000]}
+{text_for_analysis}
 
-Genera un informe profesional con:
-1. Información societaria
-2. Validación de poderes para contragarantías
-3. Lista de apoderados habilitados
-4. Conclusión sobre capacidad de firma"""
+ANALIZA Y GENERA UN INFORME DETALLADO CON:
+
+1. IDENTIFICACIÓN SOCIETARIA
+- Razón social completa y RUT
+- Tipo societario y domicilio legal
+
+2. FECHAS LEGALES Y DATOS NOTARIALES
+- Fecha constitución de la sociedad
+- Fecha otorgamiento de poderes
+- Fecha certificado de vigencia
+- CRÍTICO: Verificar vencimiento de poderes
+
+3. FACULTADES ESPECÍFICAS REQUERIDAS
+Para Contragarantía Simple:
+- Facultades cambiarias (girar, suscribir pagarés)
+- Otorgar mandatos
+- Contratar seguros
+
+Para Contragarantía Avalada:
+- Constituir aval o fianza solidaria
+- Verificar limitaciones societarias
+
+4. ANÁLISIS DE APODERADOS POR CLASE
+- Identificar clases (A, B, C, etc.)
+- Listar apoderados con sus facultades específicas
+- Indicar quiénes pueden firmar contragarantías
+
+5. CONCLUSIÓN EJECUTIVA
+- Resumen claro de quién puede firmar
+- Tipo de contragarantía autorizada
+- Observaciones críticas"""
         else:
-            prompt = f"""Genera un INFORME SOCIAL profesional de este documento.
+            # Complete INFORMES SOCIALES prompt
+            prompt = f"""Eres un asistente especializado en análisis de escrituras societarias para generar informes profesionales.
 
-Documento: {file_names[0] if file_names else 'Documento'}
+Documentos analizados: {', '.join(file_names) if file_names else 'Documentos'}
 
 Contenido:
-{text[:3000]}
+{text_for_analysis}
 
-Incluye:
-1. Datos del cliente (razón social, RUT)
-2. Objeto social
-3. Capital social
-4. Socios y participación
-5. Administración
-6. Domicilio"""
+GENERA UN INFORME SOCIAL PROFESIONAL CON:
+
+1. IDENTIFICACIÓN SOCIETARIA
+- Razón social completa
+- RUT
+- Tipo de sociedad
+- Domicilio legal
+
+2. CONSTITUCIÓN Y MODIFICACIONES
+- Fecha de constitución
+- Escritura pública (número, fecha, notaría)
+- Inscripciones en Conservador
+- Modificaciones relevantes
+
+3. OBJETO SOCIAL
+- Objeto principal
+- Actividades autorizadas
+- Restricciones
+
+4. CAPITAL SOCIAL
+- Capital inicial
+- Capital actual
+- Forma de pago
+
+5. COMPOSICIÓN SOCIETARIA
+- Socios actuales
+- Porcentaje de participación
+- Derechos especiales
+
+6. ADMINISTRACIÓN Y REPRESENTACIÓN
+- Estructura administrativa
+- Representantes legales
+- Apoderados principales
+- Facultades otorgadas
+
+7. VIGENCIA Y ESTADO
+- Estado societario actual
+- Certificados de vigencia
+- Observaciones relevantes"""
         
-        # Call Bedrock
+        # Call Bedrock with more tokens for complete analysis
         body = {
             "anthropic_version": "bedrock-2023-05-31",
-            "max_tokens": 4000,
+            "max_tokens": 8000,
             "messages": [{"role": "user", "content": prompt}],
-            "temperature": 0.3,
+            "temperature": 0.2,
             "top_p": 0.95
         }
         
@@ -237,9 +294,23 @@ Incluye:
         return response_body['content'][0]['text']
         
     except Exception as e:
-        print(f"Bedrock error: {str(e)}")
-        # Fallback to mock report
-        return generate_mock_report(model_type, file_names)
+        error_msg = f"Bedrock processing error: {str(e)}"
+        print(error_msg)
+        import traceback
+        print(traceback.format_exc())
+        
+        # Return error message instead of mock data
+        return f"""ERROR EN PROCESAMIENTO
+
+⚠️ No se pudo procesar el documento con Bedrock.
+
+Error técnico: {str(e)[:200]}
+
+Por favor, contacte al soporte técnico si el problema persiste.
+
+Documentos intentados: {', '.join(file_names) if file_names else 'Sin archivos'}
+
+Nota: Este es un mensaje de error real, no datos de prueba."""
 
 
 def create_docx(text: str, title: str = "INFORME ASPOR") -> bytes:
@@ -495,13 +566,18 @@ def handler(event, context):
         
         table.put_item(Item=run_item)
         
-        # Extract text from all files
+        # Extract text from all files with more content
         all_text = ""
         for i, s3_key in enumerate(files[:MAX_FILES_PER_RUN]):
+            print(f"Extracting text from file {i+1}: {s3_key}")
             text = extract_text_from_s3(s3_key)
             if text and text != "Error al leer el documento.":
                 file_label = file_names[i] if i < len(file_names) else f"Archivo {i+1}"
-                all_text += f"\n--- {file_label} ---\n{text[:2000]}\n"
+                # Use more text per file (up to 5000 chars per file)
+                all_text += f"\n--- {file_label} ---\n{text[:5000]}\n"
+                print(f"Extracted {len(text)} characters from {file_label}")
+            else:
+                print(f"Failed to extract text from file {i+1}: {s3_key}")
         
         if not all_text:
             all_text = "Contenido del documento para análisis."

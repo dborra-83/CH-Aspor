@@ -1117,7 +1117,7 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        fileNames: selectedFiles.map(f => f.name)
+                        file_count: selectedFiles.length
                     })
                 });
                 
@@ -1129,24 +1129,43 @@
                 showStatus('info', 'Subiendo archivos...');
                 const uploadedKeys = [];
                 
-                for (let i = 0; i < selectedFiles.length; i++) {
+                // Handle both old and new API response formats
+                const uploads = presignData.uploads || presignData.presigned_urls || [];
+                
+                for (let i = 0; i < selectedFiles.length && i < uploads.length; i++) {
                     const file = selectedFiles[i];
-                    const presignedUrl = presignData.presigned_urls[i];
+                    const upload = uploads[i];
                     
-                    const formData = new FormData();
-                    Object.entries(presignedUrl.fields).forEach(([key, value]) => {
-                        formData.append(key, value);
-                    });
-                    formData.append('file', file);
+                    // Check if it's a PUT upload (new) or POST upload (old)
+                    if (upload.method === 'PUT') {
+                        // PUT upload
+                        const uploadResponse = await fetch(upload.url, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/octet-stream'
+                            },
+                            body: file
+                        });
+                        
+                        if (!uploadResponse.ok) throw new Error(`Error al subir ${file.name}`);
+                    } else {
+                        // POST upload (legacy)
+                        const formData = new FormData();
+                        const fields = upload.fields || {};
+                        Object.entries(fields).forEach(([key, value]) => {
+                            formData.append(key, value);
+                        });
+                        formData.append('file', file);
+                        
+                        const uploadResponse = await fetch(upload.url, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!uploadResponse.ok) throw new Error(`Error al subir ${file.name}`);
+                    }
                     
-                    const uploadResponse = await fetch(presignedUrl.url, {
-                        method: 'POST',
-                        body: formData
-                    });
-                    
-                    if (!uploadResponse.ok) throw new Error(`Error al subir ${file.name}`);
-                    
-                    uploadedKeys.push(presignedUrl.s3_key);
+                    uploadedKeys.push(upload.s3_key);
                 }
                 
                 // Step 3: Process

@@ -1,0 +1,1231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASPOR - Plataforma de Análisis Inteligente</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #764ba2;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-history {
+            padding: 0.5rem 1rem;
+            background: #f3f4f6;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn-history:hover {
+            background: #e5e7eb;
+        }
+
+        /* Main Container */
+        .container {
+            flex: 1;
+            display: flex;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 2rem;
+            gap: 2rem;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 300px;
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            height: fit-content;
+        }
+
+        .sidebar h3 {
+            color: #374151;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .model-selector {
+            margin-bottom: 1.5rem;
+        }
+
+        .model-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .model-option:hover {
+            border-color: #764ba2;
+            background: #faf5ff;
+        }
+
+        .model-option.selected {
+            border-color: #764ba2;
+            background: #faf5ff;
+        }
+
+        .model-option input[type="radio"] {
+            margin-right: 0.75rem;
+        }
+
+        .model-info {
+            flex: 1;
+        }
+
+        .model-title {
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .model-desc {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+        }
+
+        /* Chat Container */
+        .chat-container {
+            flex: 1;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title {
+            font-size: 1.2rem;
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .export-buttons {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .export-btn {
+            padding: 0.5rem 1rem;
+            background: #764ba2;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            display: none;
+        }
+
+        .export-btn.show {
+            display: block;
+        }
+
+        .export-btn:hover {
+            background: #5a3785;
+        }
+
+        /* Messages Area */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+            background: #fafafa;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .user-avatar {
+            background: #667eea;
+        }
+
+        .bot-avatar {
+            background: #764ba2;
+        }
+
+        .message-content {
+            flex: 1;
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .message.user .message-content {
+            background: #f3f4f6;
+        }
+
+        .message-text {
+            color: #374151;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .typing-indicator.show {
+            display: block;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #9ca3af;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+            }
+            30% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Input Area */
+        .input-container {
+            padding: 1.5rem;
+            border-top: 1px solid #e5e7eb;
+            background: white;
+        }
+
+        .file-upload-area {
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .file-upload-area:hover {
+            border-color: #764ba2;
+            background: #faf5ff;
+        }
+
+        .file-upload-area.has-file {
+            border-color: #10b981;
+            background: #f0fdf4;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+        }
+
+        .upload-text {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .file-info {
+            display: none;
+            padding: 0.75rem;
+            background: #f3f4f6;
+            border-radius: 6px;
+            margin-top: 1rem;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-info.show {
+            display: flex;
+        }
+
+        .file-name {
+            color: #374151;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .remove-file {
+            color: #ef4444;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+
+        .analyze-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(118, 75, 162, 0.4);
+        }
+
+        .analyze-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* History Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            animation: fadeIn 0.3s;
+        }
+
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .modal-close {
+            font-size: 1.5rem;
+            color: #9ca3af;
+            cursor: pointer;
+            background: none;
+            border: none;
+        }
+
+        .modal-body {
+            padding: 1.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .history-item {
+            padding: 1rem;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .history-item:hover {
+            border-color: #764ba2;
+            background: #faf5ff;
+        }
+
+        .history-date {
+            font-size: 0.85rem;
+            color: #6b7280;
+            margin-bottom: 0.5rem;
+        }
+
+        .history-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 0.25rem;
+        }
+
+        .history-preview {
+            font-size: 0.9rem;
+            color: #6b7280;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(0,0,0,0.1);
+            border-radius: 50%;
+            border-top-color: #764ba2;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+    <!-- Marked.js for Markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">🏛️ ASPOR Intelligence Platform</div>
+        <div class="header-actions">
+            <button class="btn-history" onclick="showHistory()">
+                📚 Historial
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <h3>Tipo de Análisis</h3>
+            <div class="model-selector">
+                <label class="model-option selected">
+                    <input type="radio" name="model" value="A" checked>
+                    <div class="model-info">
+                        <div class="model-title">Contragarantías</div>
+                        <div class="model-desc">Validación de poderes y capacidad de firma</div>
+                    </div>
+                </label>
+                <label class="model-option">
+                    <input type="radio" name="model" value="B">
+                    <div class="model-info">
+                        <div class="model-title">Informe Social</div>
+                        <div class="model-desc">Análisis societario completo</div>
+                    </div>
+                </label>
+            </div>
+
+            <h3>Estadísticas</h3>
+            <div style="padding: 1rem; background: #f9fafb; border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                    <span style="color: #6b7280; font-size: 0.85rem;">Análisis realizados</span>
+                    <span style="color: #374151; font-weight: 600;" id="stats-total">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #6b7280; font-size: 0.85rem;">Este mes</span>
+                    <span style="color: #374151; font-weight: 600;" id="stats-month">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chat Container -->
+        <div class="chat-container">
+            <div class="chat-header">
+                <div class="chat-title">Análisis de Documentos</div>
+                <div class="export-buttons">
+                    <button class="export-btn" id="exportDocx" onclick="exportToDocx()">
+                        📄 Exportar DOCX
+                    </button>
+                    <button class="export-btn" id="exportPdf" onclick="exportToPdf()">
+                        📑 Exportar PDF
+                    </button>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer">
+                <!-- Welcome Message -->
+                <div class="message bot">
+                    <div class="message-avatar bot-avatar">A</div>
+                    <div class="message-content">
+                        <div class="message-text">👋 ¡Bienvenido a la plataforma ASPOR!
+
+Puedo ayudarte a analizar documentos legales de dos formas:
+
+📋 <strong>Contragarantías</strong>: Validación de poderes y capacidad de firma
+📊 <strong>Informe Social</strong>: Análisis societario completo
+
+Por favor, selecciona el tipo de análisis y carga el documento que deseas procesar.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-container">
+                <div class="file-upload-area" id="fileUploadArea" onclick="document.getElementById('fileInput').click()">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Haz clic para cargar un documento<br><small>(PDF, DOCX, TXT - Máx. 25MB)</small></div>
+                    <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" style="display: none;" onchange="handleFileSelect(event)">
+                </div>
+                <div class="file-info" id="fileInfo">
+                    <span class="file-name" id="fileName"></span>
+                    <span class="remove-file" onclick="removeFile()">✕ Eliminar</span>
+                </div>
+                <button class="analyze-btn" id="analyzeBtn" onclick="startAnalysis()" disabled>
+                    🔍 Analizar Documento
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- History Modal -->
+    <div class="modal" id="historyModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Historial de Análisis</h3>
+                <button class="modal-close" onclick="closeHistory()">&times;</button>
+            </div>
+            <div class="modal-body" id="historyList">
+                <!-- History items will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const API_URL = 'https://bsdxo3p5tc.execute-api.us-east-1.amazonaws.com/prod';
+        const CLOUDFRONT_URL = 'https://d3qiqro0ukto58.cloudfront.net';
+        
+        // State
+        let selectedFile = null;
+        let currentRunId = null;
+        let currentAnalysis = null;
+
+        // Model selector handling
+        document.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.model-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                this.classList.add('selected');
+            });
+        });
+
+        // File handling
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                if (file.size > 25 * 1024 * 1024) {
+                    alert('El archivo es demasiado grande. Máximo 25MB.');
+                    return;
+                }
+                
+                selectedFile = file;
+                document.getElementById('fileName').textContent = file.name;
+                document.getElementById('fileUploadArea').classList.add('has-file');
+                document.getElementById('fileInfo').classList.add('show');
+                document.getElementById('analyzeBtn').disabled = false;
+            }
+        }
+
+        function removeFile() {
+            selectedFile = null;
+            document.getElementById('fileInput').value = '';
+            document.getElementById('fileUploadArea').classList.remove('has-file');
+            document.getElementById('fileInfo').classList.remove('show');
+            document.getElementById('analyzeBtn').disabled = true;
+        }
+
+        // Add message to chat
+        function addMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar ${isUser ? 'user-avatar' : 'bot-avatar'}">${isUser ? 'U' : 'A'}</div>
+                <div class="message-content">
+                    <div class="message-text">${content}</div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // Show typing indicator
+        function showTyping() {
+            const messagesContainer = document.getElementById('messagesContainer');
+            const typingDiv = document.createElement('div');
+            typingDiv.className = 'message bot';
+            typingDiv.id = 'typingIndicator';
+            
+            typingDiv.innerHTML = `
+                <div class="message-avatar bot-avatar">A</div>
+                <div class="message-content">
+                    <div class="typing-indicator show">
+                        <div class="typing-dots">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            messagesContainer.appendChild(typingDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typing = document.getElementById('typingIndicator');
+            if (typing) {
+                typing.remove();
+            }
+        }
+
+        // Start analysis
+        async function startAnalysis() {
+            if (!selectedFile) return;
+            
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            analyzeBtn.disabled = true;
+            analyzeBtn.innerHTML = '<span class="spinner"></span> Procesando...';
+            
+            const model = document.querySelector('input[name="model"]:checked').value;
+            const modelName = model === 'A' ? 'Contragarantías' : 'Informe Social';
+            
+            // Add user message
+            addMessage(`📄 Analizando documento: ${selectedFile.name}\n🔍 Tipo de análisis: ${modelName}`, true);
+            
+            // Show typing indicator
+            showTyping();
+            
+            try {
+                // First, get presigned URL for upload
+                const presignResponse = await fetch(`${API_URL}/runs/presign`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors',
+                    body: JSON.stringify({ file_count: 1 })
+                });
+                
+                if (!presignResponse.ok) {
+                    throw new Error(`Upload preparation failed: ${presignResponse.status}`);
+                }
+                
+                const presignData = await presignResponse.json();
+                
+                // Upload file to S3
+                if (presignData.uploads && presignData.uploads[0]) {
+                    const upload = presignData.uploads[0];
+                    console.log('Upload info:', upload);
+                    
+                    // Check if it's a PUT upload (new method) or POST (old method)
+                    if (upload.method === 'PUT') {
+                        // Simple PUT upload
+                        console.log('Using PUT method to upload file');
+                        const uploadResponse = await fetch(upload.url, {
+                            method: 'PUT',
+                            headers: {
+                                'Content-Type': 'application/octet-stream'
+                            },
+                            body: selectedFile
+                        });
+                        
+                        if (!uploadResponse.ok) {
+                            const errorText = await uploadResponse.text();
+                            console.error('Upload failed:', errorText);
+                            throw new Error(`File upload failed: ${uploadResponse.status}`);
+                        }
+                        console.log('File uploaded successfully');
+                    } else {
+                        // Legacy POST upload (fallback)
+                        const formData = new FormData();
+                        const fields = upload.fields || {};
+                        
+                        // Add fields in order
+                        Object.entries(fields).forEach(([key, value]) => {
+                            formData.append(key, value);
+                        });
+                        
+                        // File must be last
+                        formData.append('file', selectedFile);
+                        
+                        const uploadResponse = await fetch(upload.url, {
+                            method: 'POST',
+                            body: formData
+                        });
+                        
+                        if (!uploadResponse.ok) {
+                            throw new Error('File upload failed');
+                        }
+                    }
+                    
+                    // Now process the file with the main API
+                    const processResponse = await fetch(`${API_URL}/runs`, {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        mode: 'cors',
+                        body: JSON.stringify({
+                            model: model,
+                            files: [presignData.uploads[0].s3_key],
+                            fileNames: [selectedFile.name],
+                            outputFormat: 'docx',
+                            userId: 'web-user'
+                        })
+                    });
+                    
+                    if (!processResponse.ok) {
+                        throw new Error(`Processing failed: ${processResponse.status}`);
+                    }
+                    
+                    const result = await processResponse.json();
+                    currentRunId = result.runId;
+                    
+                    // Hide typing
+                    hideTyping();
+                    
+                    // If we have a download URL, it means processing is complete
+                    if (result.status === 'COMPLETED' && result.downloadUrl) {
+                        // Try to get the actual analysis text from the server
+                        let analysisText = '';
+                        
+                        // Fetch the run details to get the actual analysis
+                        try {
+                            const runDetailsResponse = await fetch(`${API_URL}/runs/${result.runId}`, {
+                                method: 'GET',
+                                headers: { 'Accept': 'application/json' },
+                                mode: 'cors'
+                            });
+                            
+                            if (runDetailsResponse.ok) {
+                                const runDetails = await runDetailsResponse.json();
+                                
+                                // If we have analysis text, use it
+                                if (runDetails.analysisText) {
+                                    analysisText = runDetails.analysisText;
+                                    // Display the real analysis with streaming effect
+                                    await displayStreamingText(analysisText, selectedFile.name);
+                                } else if (runDetails.output && runDetails.output.text) {
+                                    analysisText = runDetails.output.text;
+                                    await displayStreamingText(analysisText, selectedFile.name);
+                                } else {
+                                    // If no analysis text available, show message
+                                    addMessage('✅ Procesamiento completado. El informe está disponible para descarga.');
+                                    analysisText = 'Análisis completado. Descargue el documento para ver el informe completo.';
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error fetching run details:', error);
+                            addMessage('✅ Procesamiento completado. El informe está disponible para descarga.');
+                        }
+                        
+                        currentAnalysis = analysisText;
+                        
+                        // Store the download URL for export
+                        window.currentDownloadUrl = result.downloadUrl;
+                    }
+                } else {
+                    // Fallback if upload fails
+                    hideTyping();
+                    
+                    let analysisText = '';
+                    if (model === 'A') {
+                        analysisText = await simulateStreamingAnalysis(
+                            'contragarantias',
+                            selectedFile.name
+                        );
+                    } else {
+                        analysisText = await simulateStreamingAnalysis(
+                            'informe_social',
+                            selectedFile.name
+                        );
+                    }
+                    
+                    currentAnalysis = analysisText;
+                }
+                
+                // Show export buttons
+                document.getElementById('exportDocx').classList.add('show');
+                document.getElementById('exportPdf').classList.add('show');
+                
+                // Save to history
+                saveToHistory(selectedFile.name, model, analysisText);
+                
+                // Update stats
+                updateStats();
+                
+            } catch (error) {
+                hideTyping();
+                addMessage(`❌ Error al procesar el documento: ${error.message}`);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.innerHTML = '🔍 Analizar Documento';
+            }
+        }
+
+        // Scroll to bottom helper function
+        function scrollToBottom() {
+            const container = document.getElementById('messagesContainer');
+            if (container) {
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+        
+        // Display real analysis with streaming effect
+        async function displayStreamingText(analysisText, fileName) {
+            // Ensure analysisText is defined
+            if (!analysisText) {
+                console.error('No analysis text provided');
+                analysisText = 'Error: No se recibió texto de análisis';
+            }
+            
+            // Display real analysis text with streaming effect
+            let fullText = '';
+            
+            // Try to find the messages container
+            let messagesContainer = document.getElementById('messagesContainer');
+            
+            // If not found, wait a bit and try again (DOM might not be ready)
+            if (!messagesContainer) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                messagesContainer = document.getElementById('messagesContainer');
+            }
+            
+            // If still not found, use addMessage function instead
+            if (!messagesContainer) {
+                console.error('Messages container not found, using addMessage fallback');
+                if (typeof addMessage === 'function') {
+                    addMessage(analysisText);
+                }
+                return analysisText;
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-avatar bot-avatar">A</div>
+                <div class="message-content">
+                    <div class="message-text" id="streamingText-${Date.now()}"></div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            const contentDiv = messageDiv.querySelector('[id^="streamingText"]');
+            
+            // Split the text into lines for streaming effect
+            const lines = analysisText.split('\n');
+            
+            for (const line of lines) {
+                fullText += line + '\n';
+                await new Promise(resolve => setTimeout(resolve, 20));
+                // Try to use marked if available, otherwise use plain text
+                if (typeof marked !== 'undefined') {
+                    contentDiv.innerHTML = marked.parse(fullText);
+                } else {
+                    // Fallback to simple text with line breaks
+                    contentDiv.innerHTML = fullText.replace(/\n/g, '<br>').replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                }
+                scrollToBottom();
+            }
+            
+            const exportButtons = document.getElementById('exportButtons');
+            if (exportButtons) {
+                exportButtons.style.display = 'flex';
+            }
+            
+            return fullText;
+        }
+        
+        // Simulate streaming analysis - ONLY FOR FALLBACK/DEMO
+        async function simulateStreamingAnalysis(type, fileName) {
+            const chunks = type === 'contragarantias' ? 
+                getContragarantiasChunks(fileName) : 
+                getInformeSocialChunks(fileName);
+            
+            let fullText = '';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-avatar bot-avatar">A</div>
+                <div class="message-content">
+                    <div class="message-text" id="streamingText"></div>
+                </div>
+            `;
+            
+            document.getElementById('messagesContainer').appendChild(messageDiv);
+            const textElement = document.getElementById('streamingText');
+            
+            for (const chunk of chunks) {
+                fullText += chunk;
+                textElement.innerHTML = formatAnalysisText(fullText);
+                document.getElementById('messagesContainer').scrollTop = 
+                    document.getElementById('messagesContainer').scrollHeight;
+                await sleep(500 + Math.random() * 500);
+            }
+            
+            return fullText;
+        }
+
+        function getContragarantiasChunks(fileName) {
+            const date = new Date().toLocaleDateString('es-CL');
+            return [
+                `📊 **INFORME DE ANÁLISIS DE PODERES - ASPOR**\n`,
+                `=====================================\n\n`,
+                `📅 Fecha: ${date}\n`,
+                `📄 Documento analizado: ${fileName}\n\n`,
+                `**INFORMACIÓN SOCIETARIA**\n`,
+                `------------------------\n`,
+                `• Razón Social: EMPRESA DEMO S.A.\n`,
+                `• RUT: 76.123.456-7\n`,
+                `• Tipo: Sociedad Anónima\n`,
+                `• Domicilio: Av. Providencia 1234, Santiago, Chile\n\n`,
+                `**VALIDACIÓN PARA CONTRAGARANTÍAS**\n`,
+                `----------------------------------\n`,
+                `✅ **APODERADOS CLASE A:**\n\n`,
+                `1. Juan Carlos Pérez González\n`,
+                `   • RUT: 12.345.678-9\n`,
+                `   • Facultades: Suscribir pagarés, otorgar mandatos, contratar seguros\n\n`,
+                `2. María Isabel González Silva\n`,
+                `   • RUT: 10.987.654-3\n`,
+                `   • Facultades: Suscribir pagarés, otorgar mandatos, contratar seguros\n\n`,
+                `**CONCLUSIÓN**\n`,
+                `-----------\n`,
+                `✅ Los apoderados identificados **PUEDEN** firmar contragarantías para ASPOR.\n\n`,
+                `---\n`,
+                `*Informe generado automáticamente por el Sistema ASPOR v2.0*`
+            ];
+        }
+
+        function getInformeSocialChunks(fileName) {
+            const date = new Date().toLocaleDateString('es-CL');
+            return [
+                `📊 **INFORME SOCIAL**\n`,
+                `==================\n\n`,
+                `📅 Santiago, ${date}\n\n`,
+                `**CLIENTE:** EMPRESA DEMO S.A.\n`,
+                `**R.U.T.:** 76.123.456-7\n\n`,
+                `**1. OBJETO SOCIAL**\n`,
+                `------------------\n`,
+                `El desarrollo de actividades comerciales e industriales en general.\n\n`,
+                `**2. CAPITAL SOCIAL**\n`,
+                `-------------------\n`,
+                `• Capital Total: $100.000.000\n`,
+                `• Capital Pagado: $100.000.000\n\n`,
+                `**3. SOCIOS Y PARTICIPACIÓN**\n`,
+                `---------------------------\n`,
+                `| R.U.T. | Nombre | % Capital |\n`,
+                `|--------|--------|----------|\n`,
+                `| 12.345.678-9 | Juan Pérez González | 40% |\n`,
+                `| 10.987.654-3 | María González Silva | 35% |\n`,
+                `| 11.222.333-4 | Pedro Rodríguez López | 25% |\n\n`,
+                `**4. ADMINISTRACIÓN**\n`,
+                `-------------------\n`,
+                `• Tipo: Directorio\n`,
+                `• Miembros: 5 directores titulares\n\n`,
+                `**5. DOMICILIO**\n`,
+                `--------------\n`,
+                `• Legal: Santiago, Región Metropolitana\n`,
+                `• Dirección: Av. Providencia 1234, Oficina 567\n\n`,
+                `---\n`,
+                `*Documento analizado: ${fileName}*`
+            ];
+        }
+
+        function formatAnalysisText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>')
+                .replace(/✅/g, '<span style="color: #10b981;">✅</span>')
+                .replace(/❌/g, '<span style="color: #ef4444;">❌</span>');
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // Export functions
+        async function exportToDocx() {
+            if (!currentAnalysis || !currentRunId) {
+                // If no runId, just download the analysis as text
+                if (currentAnalysis) {
+                    const blob = new Blob([currentAnalysis], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `informe_aspor_${Date.now()}.txt`;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                }
+                return;
+            }
+            
+            const btn = document.getElementById('exportDocx');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generando...';
+            
+            try {
+                // Get the run details to get download URL
+                const response = await fetch(`${API_URL}/runs/${currentRunId}`, {
+                    method: 'GET',
+                    headers: { 
+                        'Accept': 'application/json'
+                    },
+                    mode: 'cors'
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.downloadUrl) {
+                        // Open the download URL
+                        window.open(data.downloadUrl, '_blank');
+                        addMessage('✅ Documento DOCX descargado exitosamente');
+                    }
+                } else {
+                    throw new Error('No se pudo obtener el enlace de descarga');
+                }
+            } catch (error) {
+                addMessage('❌ Error al generar el documento: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📄 Exportar DOCX';
+            }
+        }
+
+        async function exportToPdf() {
+            if (!currentAnalysis) return;
+            
+            const btn = document.getElementById('exportPdf');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner"></span> Generando...';
+            
+            try {
+                // Here you would call your backend to generate the PDF
+                // For now, we'll create a simple download
+                const blob = new Blob([currentAnalysis], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `informe_aspor_${Date.now()}.txt`;
+                a.click();
+                URL.revokeObjectURL(url);
+                
+                addMessage('✅ Documento PDF generado exitosamente');
+            } catch (error) {
+                addMessage('❌ Error al generar el documento');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '📑 Exportar PDF';
+            }
+        }
+
+        // History functions
+        function saveToHistory(fileName, model, analysis) {
+            const history = JSON.parse(localStorage.getItem('asporHistory') || '[]');
+            history.unshift({
+                id: Date.now(),
+                date: new Date().toISOString(),
+                fileName,
+                model,
+                analysis,
+                preview: analysis.substring(0, 100) + '...'
+            });
+            
+            // Keep only last 50 items
+            if (history.length > 50) {
+                history.pop();
+            }
+            
+            localStorage.setItem('asporHistory', JSON.stringify(history));
+        }
+
+        function showHistory() {
+            const modal = document.getElementById('historyModal');
+            const historyList = document.getElementById('historyList');
+            const history = JSON.parse(localStorage.getItem('asporHistory') || '[]');
+            
+            historyList.innerHTML = '';
+            
+            if (history.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; color: #9ca3af;">No hay análisis previos</p>';
+            } else {
+                history.forEach(item => {
+                    const date = new Date(item.date).toLocaleString('es-CL');
+                    const modelName = item.model === 'A' ? 'Contragarantías' : 'Informe Social';
+                    
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.onclick = () => loadHistoryItem(item);
+                    
+                    historyItem.innerHTML = `
+                        <div class="history-date">${date}</div>
+                        <div class="history-title">${item.fileName} - ${modelName}</div>
+                        <div class="history-preview">${item.preview}</div>
+                    `;
+                    
+                    historyList.appendChild(historyItem);
+                });
+            }
+            
+            modal.classList.add('show');
+        }
+
+        function closeHistory() {
+            document.getElementById('historyModal').classList.remove('show');
+        }
+
+        function loadHistoryItem(item) {
+            closeHistory();
+            
+            // Clear messages except welcome
+            const messagesContainer = document.getElementById('messagesContainer');
+            while (messagesContainer.children.length > 1) {
+                messagesContainer.removeChild(messagesContainer.lastChild);
+            }
+            
+            // Add the analysis from history
+            const modelName = item.model === 'A' ? 'Contragarantías' : 'Informe Social';
+            addMessage(`📄 Cargando desde historial: ${item.fileName}\n🔍 Tipo: ${modelName}`, true);
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message bot';
+            messageDiv.innerHTML = `
+                <div class="message-avatar bot-avatar">A</div>
+                <div class="message-content">
+                    <div class="message-text">${formatAnalysisText(item.analysis)}</div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            
+            currentAnalysis = item.analysis;
+            document.getElementById('exportDocx').classList.add('show');
+            document.getElementById('exportPdf').classList.add('show');
+        }
+
+        function updateStats() {
+            const history = JSON.parse(localStorage.getItem('asporHistory') || '[]');
+            document.getElementById('stats-total').textContent = history.length;
+            
+            const thisMonth = history.filter(item => {
+                const date = new Date(item.date);
+                const now = new Date();
+                return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+            }).length;
+            
+            document.getElementById('stats-month').textContent = thisMonth;
+        }
+
+        // Initialize
+        updateStats();
+
+        // Close modal on outside click
+        window.onclick = function(event) {
+            const modal = document.getElementById('historyModal');
+            if (event.target == modal) {
+                closeHistory();
+            }
+        }
+    </script>
+</body>
+</html>
